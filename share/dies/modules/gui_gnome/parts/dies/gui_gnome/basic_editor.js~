@@ -1,0 +1,13 @@
+const Gtk = imports.gi.Gtk;
+
+function Editor ()
+{
+	this._init ();
+}
+
+Editor.prototype = {
+	_init: function () {
+	
+	}
+}
+

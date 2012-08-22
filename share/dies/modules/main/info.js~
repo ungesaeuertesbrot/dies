@@ -1,0 +1,41 @@
+{
+	"name": "main",
+	"version": "0a",
+	"title": "Dies main module",
+	"description": "The core of the dies programm. It provides the code necessary for starting the application.",
+	
+	"extension_points": {
+		"/dies/gui": {
+			"is_singular": true,
+			"test_args": {
+				"window": "",
+				"toolkit": "string",
+				"present": "function",
+				"hide": "function",
+				"run": "function",
+				"quit": "function"
+			}
+		},
+		
+		"/dies/storage": {
+			"extension_test": "dies/main/extension_points::test_storage"
+		},
+		
+		"/dies/data_mgr": {
+			"test_args": {
+				"id": "",
+				"type": "string",
+				"multi": "boolean",
+				"storage": "",
+				"create_collection": "function"
+			}
+		}
+	},
+	
+	"extensions": [
+		{
+			"extends": "/",
+			"extension_class": "dies/root::Root"
+		}
+	]
+}
