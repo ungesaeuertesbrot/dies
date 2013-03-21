@@ -2,5 +2,5 @@
 
 export MALUS_PREFIX=/home/schoel/Projekte/malus
 export MALUS_APP_PREFIX=/home/schoel/Projekte/dies
-gjs $MALUS_PREFIX/share/malus/parts/malus/malus.js -n dies
+gjs $MALUS_PREFIX/share/malus/js/malus/malus.js -n dies
 
