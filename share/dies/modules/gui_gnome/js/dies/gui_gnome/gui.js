@@ -85,46 +85,12 @@ Gui.prototype = {
 								Gtk.AttachOptions.FILL, 0, 0);
 	
 		// Right pane
-		this.date_adjustment = new Gtk.Calendar ({expand: false});
-		this.date_adjustment.connect ("day-selected", this.__on_date_adjusted.bind (this));
-		this.date_expander = new Gtk.Expander ({label: ""});
-		this.date_expander.add (this.date_adjustment);
-	
-		this.title_entry = new Gtk.Entry ({placeholder_text: "Short description of the day's events", has_frame: false, shadow_type: Gtk.ShadowType.NONE});
-		this.title_entry.connect ("realize", function (a, e) {
-			let gdk_events = this.title_entry.window.get_events ();
-			gdk_events |= Gdk.FOCUS_CHANGE_MASK;
-			this.title_entry.window.set_events (gdk_events);
-			this.title_entry.connect ("focus-out-event", this.__on_entry_focus_out.bind (this, "title"));
-		}.bind (this));
+		let editor = new imports.dies.gui_gnome.basic_editor.Editor ();
 		
-		this.place_entry = new Gtk.Entry ({placeholder_text: "Where did this take place?", has_frame: false, shadow_type: Gtk.ShadowType.NONE});
-		this.place_entry.connect ("realize", function (a, e) {
-			let gdk_events = this.place_entry.window.get_events ();
-			gdk_events |= Gdk.FOCUS_CHANGE_MASK;
-			this.place_entry.window.set_events (gdk_events);
-			this.place_entry.connect ("focus-out-event", this.__on_entry_focus_out.bind (this, "place"));
-		}.bind (this));
-		
-		this.text_body = new Gtk.TextView ({pixels_below_lines: 5, wrap_mode: Gtk.WrapMode.WORD_CHAR, left_margin: 3, right_margin: 3});
-		this.text_body.connect ("realize", function (a, e) {
-			let gdk_events = this.text_body.window.get_events ();
-			gdk_events |= Gdk.FOCUS_CHANGE_MASK;
-			this.text_body.window.set_events (gdk_events);
-			this.text_body.connect ("focus-out-event", this.__on_body_focus_out.bind (this));
-		}.bind (this));
-		this.text_body_scroll = new Gtk.ScrolledWindow ({child: this.text_body});
-	
-		this.details_box = new Gtk.Box ({orientation: Gtk.Orientation.VERTICAL, hexpand: true});
-		this.details_box.pack_start (this.date_expander, false, false, 0);
-		this.details_box.pack_start (this.title_entry, false, false, 0);
-		this.details_box.pack_start (this.place_entry, false, false, 0);
-		this.details_box.pack_start (this.text_body_scroll, true, true, 0);
-	
 		// Window
 		this.base_box = new Gtk.Paned ({orientation: Gtk.Orientation.HORIZONTAL, position: 0});
-		this.base_box.pack1 (this.overview_box, true, false);
-		this.base_box.pack2 (this.details_box, true, false);
+		this.base_box.pack1 (this.overview_box, false, false);
+		this.base_box.pack2 (editor, true, false);
 		this.base_box.show_all ();
 	
 		this.window = new Gtk.Window ({type: Gtk.WindowType.TOPLEVEL, title: "Dies"});
@@ -386,7 +352,7 @@ Gui.prototype = {
 		this.entry_list.model = this.empty_list_store;
 		this.list_entry_renderer.alignment = Pango.Alignment.CENTER;
 		this.list_entry_renderer.xalign = 0.5;
-		this.details_box.sensitive = false;
+//		this.details_box.sensitive = false;
 	},
 
 
