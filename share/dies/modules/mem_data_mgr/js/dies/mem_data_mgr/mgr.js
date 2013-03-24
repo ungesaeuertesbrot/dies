@@ -1,4 +1,4 @@
-const Collection = imports["dies/mem_data_mgr/item_collection"];
+const Collection = imports.dies.mem_data_mgr.item_collection;
 
 function Manager ()
 {

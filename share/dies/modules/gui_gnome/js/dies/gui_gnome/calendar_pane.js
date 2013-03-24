@@ -1,69 +1,33 @@
+const Lang = imports.lang;
+
 const GObj = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
-const Event = imports.malus.event;
 
-function Pane ()
-{
-	this._init ();
-}
 
-Pane.prototype = {
-	widget: null,
+const ROOT_OBJECTS = ["OverviewBox", "EmptyListstore", "EntryListstore"];
+
+const Overview = new Lang.Object ({
+	Name: "ItemsOverview",
+	Extends: Gtk.Bin,
+	Signals: {
+		"selection-changed": {},
+	},
 	
+
+	ui_elements: {
+		OverviewBox: null,
+		EmptyListstore: null,
+		EntryListstore: null,
+	},
+	
+
 	_init: function () {
-		this.entry_list_store = new Gtk.ListStore ();
-		this.entry_list_store.set_column_types ([GObj.TYPE_INT, GObj.TYPE_INT, GObj.TYPE_STRING]);
+		this.parent ({});
 		
-		this.empty_list_store = new Gtk.ListStore ();
-		this.empty_list_store.set_column_types ([GObj.TYPE_INT, GObj.TYPE_INT, GObj.TYPE_STRING]);
-		var iter = this.empty_list_store.append ();
-		this.empty_list_store.set_value (iter, 2, "<span weight=\"bold\" size=\"larger\" color=\"gray\">No entries available</span>");
-	
-		this.entry_list = new Gtk.TreeView ({headers_visible: false,
-											model: this.empty_list_store,
-											sensitive: false});
-		this.list_entry_renderer = new Gtk.CellRendererText ();
-		var column = new Gtk.TreeViewColumn ({title: "Entries", sort_column_id: 1});
-		column.pack_start (this.list_entry_renderer, true);
-		column.add_attribute (this.list_entry_renderer, "markup", 2);
-		this.entry_list.append_column (column);
-		this.entry_list_scroll = new Gtk.ScrolledWindow ({child: this.entry_list});
-
-		this.entry_list_selection = this.entry_list.get_selection ();
-		this.entry_list_selection.connect ("changed", this.__on_entry_list_selection_changed.bind (this));
-	
-		this.calendar = new Gtk.Calendar ({show_week_numbers: true});
-		this.calendar.connect ("day-selected-double-click", this.__on_add_button_clicked.bind (this));
-	
-		this.add_button = new Gtk.Button ({image: new Gtk.Image ({stock: "gtk-add"}),
-										relief: Gtk.ReliefStyle.NONE,
-										border_width: 0,
-										expand: false,
-										margin: 0,
-										halign: Gtk.Align.START});
-		this.add_button.connect ("clicked", this.__on_add_button_clicked.bind (this));
-		this.remove_button = new Gtk.Button ({image: new Gtk.Image ({stock: "gtk-remove"}),
-											relief: Gtk.ReliefStyle.NONE,
-											border_width: 0,
-											expand: false,
-											margin: 0,
-											halign: Gtk.Align.START});
-		this.remove_button.connect ("clicked", this.__on_remove_button_clicked.bind (this));
-		this.action_buttons = new Gtk.ButtonBox ({orientation: Gtk.Orientation.VERTICAL,
-												layout_style: Gtk.ButtonBoxStyle.START,
-												spacing: 5,
-												border_width: 5,
-												halign: Gtk.Align.START});
-		this.action_buttons.pack_end (this.add_button, false, false, 0);
-		this.action_buttons.pack_end (this.remove_button, false, false, 0);
-	
-		this.widget = new Gtk.Table ({n_columns: 2, n_rows: 2, hexpand: false});
-		this.widget.attach (this.entry_list_scroll, 0, 2, 0, 1, Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL,
-								Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL, 0, 0);
-		this.widget.attach (this.calendar, 0, 1, 1, 2, 0,
-								Gtk.AttachOptions.FILL, 0, 0);
-		this.widget.attach (this.action_buttons, 1, 2, 1, 2, Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL,
-								Gtk.AttachOptions.FILL, 0, 0);
+		let builder = new Gtk.Builder ({});
+		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "overview_box.ui"]), ROOT_OBJECTS);
+		GtkExt.builder_connect (builder, event_handlers, this.ui_elements);
+		this.child = this.ui_elements.OverviewBox;
 	},
 	
 
@@ -141,10 +105,9 @@ Pane.prototype = {
 			this.text_body.buffer.set_modified (false);
 		}
 	},
-}
+});
 
-Event.add_events (Pane.prototype, [
-	"date_selected",
-	"date_add"
-]);
+const event_handlers = {
+
+};
 

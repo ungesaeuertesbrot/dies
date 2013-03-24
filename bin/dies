@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export MALUS_PREFIX=/home/schoel/Projekte/malus
-export MALUS_APP_PREFIX=/home/schoel/Projekte/dies
+export MALUS_PREFIX=/home/thorsten/Projekte/malus
+export MALUS_APP_PREFIX=/home/thorsten/Projekte/dies
 gjs $MALUS_PREFIX/share/malus/js/malus/malus.js -n dies
 

@@ -40,10 +40,8 @@
             <property name="can_focus">False</property>
             <property name="halign">start</property>
             <property name="valign">start</property>
-            <property name="vexpand">True</property>
-            <property name="border_width">5</property>
+            <property name="hexpand">True</property>
             <property name="orientation">vertical</property>
-            <property name="spacing">5</property>
             <property name="layout_style">start</property>
             <child>
               <object class="GtkButton" id="AddButton">
@@ -64,9 +62,8 @@
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
+                <property name="fill">True</property>
                 <property name="position">0</property>
-                <property name="secondary">True</property>
                 <property name="non_homogeneous">True</property>
               </packing>
             </child>
@@ -89,9 +86,8 @@
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
+                <property name="fill">True</property>
                 <property name="position">1</property>
-                <property name="secondary">True</property>
                 <property name="non_homogeneous">True</property>
               </packing>
             </child>
@@ -107,6 +103,8 @@
           <object class="GtkCalendar" id="OverviewCalendar">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="halign">start</property>
+            <property name="valign">end</property>
             <property name="year">2013</property>
             <property name="month">1</property>
             <property name="day">18</property>
@@ -122,6 +120,8 @@
           <object class="GtkScrolledWindow" id="EntryListScroll">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="shadow_type">in</property>
             <child>
               <object class="GtkTreeView" id="EntryList">
