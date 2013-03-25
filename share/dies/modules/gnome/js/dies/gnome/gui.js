@@ -17,12 +17,6 @@ Gui.prototype = {
 	 * Sets up the object.
 	 */
 	_init: function () {
-		Context.modules.add_extension_listener ("/dies/gui_gnome/overview", function (path, ext) {
-			this.overview = Context.modules.get_extension_object (ext);
-		}.bind (this));
-		Context.modules.add_extension_listener ("/dies/gui_gnome/editor", function (path, ext) {
-			this.editor = Context.modules.get_extension_object (ext);
-		}.bind (this));
 		this.__build_window ();
 	},
 	
@@ -31,9 +25,12 @@ Gui.prototype = {
 	 * Creates the window and its contents and connects to signals.
 	 */
 	__build_window: function () {
+		let overview = new imports.dies.gnome.overview.Overview ();
+		let editor = new imports.dies.gnome.editor.Editor ();
+		
 		this.base_box = new Gtk.Paned ({orientation: Gtk.Orientation.HORIZONTAL, position: 0});
-		this.base_box.pack1 (this.overview, false, false);
-		this.base_box.pack2 (this.editor, true, false);
+		this.base_box.pack1 (overview, false, false);
+		this.base_box.pack2 (editor, true, false);
 		this.base_box.show_all ();
 	
 		this.window = new Gtk.Window ({type: Gtk.WindowType.TOPLEVEL, title: "Dies"});

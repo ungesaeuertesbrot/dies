@@ -4,12 +4,12 @@ const GObj = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
 const GtkExt = imports.malus.gtk_ext;
-const GuiGnome = imports.dies.gui_gnome.shared;
+const GuiGnome = imports.dies.gnome.shared;
 
 const ROOT_OBJECTS = ["OverviewBox", "EmptyListstore", "EntryListstore"];
 
 const Overview = new Lang.Class ({
-	Name: "ItemsOverview",
+	Name: "DiesItemsOverview",
 	Extends: Gtk.Notebook,
 	Signals: {
 		"date-selected": {},

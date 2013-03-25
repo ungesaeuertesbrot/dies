@@ -5,7 +5,7 @@ const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
 const GtkExt = imports.malus.gtk_ext;
-const GuiGnome = imports.dies.gui_gnome.shared;
+const GuiGnome = imports.dies.gnome.shared;
 
 
 const ROOT_OBJECTS = ["DetailsBox", "TextbodyBuffer"];
