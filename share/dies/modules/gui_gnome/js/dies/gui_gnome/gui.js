@@ -17,8 +17,13 @@ Gui.prototype = {
 	 * Sets up the object.
 	 */
 	_init: function () {
+		Context.modules.add_extension_listener ("/dies/gui_gnome/overview", function (path, ext) {
+			this.overview = Context.modules.get_extension_object (ext);
+		}.bind (this));
+		Context.modules.add_extension_listener ("/dies/gui_gnome/editor", function (path, ext) {
+			this.editor = Context.modules.get_extension_object (ext);
+		}.bind (this));
 		this.__build_window ();
-		this.__watch_data ();
 	},
 	
 	
@@ -26,16 +31,9 @@ Gui.prototype = {
 	 * Creates the window and its contents and connects to signals.
 	 */
 	__build_window: function () {
-		// Left pane
-		let overview = new miports.dies.gui_gnome.overview_box.Overview ();
-		
-		// Right pane
-		let editor = new imports.dies.gui_gnome.basic_editor.Editor ();
-		
-		// Window
 		this.base_box = new Gtk.Paned ({orientation: Gtk.Orientation.HORIZONTAL, position: 0});
-		this.base_box.pack1 (overview, false, false);
-		this.base_box.pack2 (editor, true, false);
+		this.base_box.pack1 (this.overview, false, false);
+		this.base_box.pack2 (this.editor, true, false);
 		this.base_box.show_all ();
 	
 		this.window = new Gtk.Window ({type: Gtk.WindowType.TOPLEVEL, title: "Dies"});
@@ -43,6 +41,22 @@ Gui.prototype = {
 		this.window.child = this.base_box;
 	},
 	
+	present: function () {
+		this.window.show ();
+	},
+	
+	hide: function () {
+		this.window.hide ();
+	},
+	
+	run: function () {
+		this.present ();
+		Gtk.main ();
+	},
+	
+	quit: function () {
+		Gtk.main_quit ();
+	},
 };
 
 

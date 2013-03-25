@@ -7,20 +7,18 @@
 	"extension_points": {
 		"/dies/gui_gnome/editor": {
 			"test_args": {
-				"widget": "",
 				"set_contents": "function",
 				"get_contents": "function",
-				"changed": "event"
+				"changed": "gsignal"
 			}
 		},
 		
-		"/dies/gui_gnome/pane": {
+		"/dies/gui_gnome/overview": {
 			"test_args": {
-				"widget": "",
 				"set_date": "function",
 				"get_date": "function",
-				"date_selected": "event",
-				"date_add": "event"
+				"date-selected": "gsignal",
+				"date-add": "gsignal"
 			}
 		}
 	},
@@ -37,8 +35,8 @@
 		},
 		
 		{
-			"extends": "/dies/gui_gnome/pane",
-			"extension_class": "dies/gui_gnome/calendar_pane::Pane"
+			"extends": "/dies/gui_gnome/overview",
+			"extension_class": "dies/gui_gnome/calendar_pane::Overview"
 		}
 	]
 }

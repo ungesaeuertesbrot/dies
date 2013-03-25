@@ -27,8 +27,16 @@ const Editor = new Lang.Class ({
 		
 		let builder = new Gtk.Builder ({});
 		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "details_box.ui"]), ROOT_OBJECTS);
-		GtkExt.builder_connect (builder, event_handlers, this.ui_elements);
+		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
 		this.child = this.ui_elements.DetailsBox;
+	},
+	
+	set_contents: function () {
+	
+	},
+	
+	get_contents: function () {
+	
 	},
 });
 

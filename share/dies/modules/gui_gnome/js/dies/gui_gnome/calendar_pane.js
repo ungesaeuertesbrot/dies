@@ -3,14 +3,17 @@ const Lang = imports.lang;
 const GObj = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
+const GtkExt = imports.malus.gtk_ext;
+const GuiGnome = imports.dies.gui_gnome.shared;
 
 const ROOT_OBJECTS = ["OverviewBox", "EmptyListstore", "EntryListstore"];
 
-const Overview = new Lang.Object ({
+const Overview = new Lang.Class ({
 	Name: "ItemsOverview",
-	Extends: Gtk.Bin,
+	Extends: Gtk.Notebook,
 	Signals: {
-		"selection-changed": {},
+		"date-selected": {},
+		"date-add": {},
 	},
 	
 
@@ -26,15 +29,25 @@ const Overview = new Lang.Object ({
 		
 		let builder = new Gtk.Builder ({});
 		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "overview_box.ui"]), ROOT_OBJECTS);
-		GtkExt.builder_connect (builder, event_handlers, this.ui_elements);
+		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
 		this.child = this.ui_elements.OverviewBox;
 	},
 	
+	set_date: function () {
+	
+	},
+	
+	get_date: function () {
+	
+	},
+});
+
+const event_handlers = {
 
 	/*
 	 * Event handler
 	 */
-	__on_add_button_clicked: function (actor, event) {
+	on_add_button_clicked: function (actor, event) {
 		var date = GLib.Date.new_dmy (this.calendar.day, this.calendar.month + 1, this.calendar.year);
 		for (let item in Context.active_collection.get_iterator ())
 			if (date.compare (item.date) === 0) {
@@ -54,7 +67,7 @@ const Overview = new Lang.Object ({
 	/*
 	 * Event handler
 	 */
-	__on_remove_button_clicked: function (actor, event) {
+	on_remove_button_clicked: function (actor, event) {
 		var iter = this.entry_list.get_selection ().get_selected ()[2];
 		var item_id = this.entry_list_store.get_value (iter, 0);
 		var item = Context.active_collection.get_item (item_id);
@@ -75,7 +88,7 @@ const Overview = new Lang.Object ({
 	/*
 	 * Event handler
 	 */
-	__on_entry_list_selection_changed: function (actor, event) {
+	on_entry_list_selection_changed: function (actor, event) {
 		if (this.entry_list.get_selection ().count_selected_rows () === 0) {
 			Context.active_item = null;
 			this.remove_button.sensitive = false;
@@ -105,9 +118,6 @@ const Overview = new Lang.Object ({
 			this.text_body.buffer.set_modified (false);
 		}
 	},
-});
-
-const event_handlers = {
-
 };
+
 
