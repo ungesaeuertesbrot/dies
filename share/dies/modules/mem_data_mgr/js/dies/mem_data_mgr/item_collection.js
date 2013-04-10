@@ -1,4 +1,4 @@
-const Event = imports.malus.event;
+//const Event = imports.malus.event;
 
 var __last_collection_id = 0;
 function DataCollection ()
@@ -72,5 +72,5 @@ DataCollection.prototype = {
 		}
 	}
 };
-Event.add_events (DataCollection.prototype, ["changed", "new", "deleted"]);
+//Event.add_events (DataCollection.prototype, ["changed", "new", "deleted"]);
 

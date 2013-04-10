@@ -1,61 +1,35 @@
-const Gdk = imports.gi.Gdk;
-const Gtk = imports.gi.Gtk;
+const Lang = imports.lang;
+const GLib = imports.gi.GLib;
 const GObj = imports.gi.GObject;
-const Pango = imports.gi.Pango;
+const Gio = imports.gi.Gio;
+const Gtk = imports.gi.Gtk;
+const MainWnd = imports.dies.gnome.main_window;
 
-const Context = imports.malus.context;
+GObj.type_init();
+Gtk.init(null, null);
 
-function Gui ()
-{
-	Gtk.init (null, null);
-	this._init ();
-}
-
-
-Gui.prototype = {
-	/*
-	 * Sets up the object.
-	 */
-	_init: function () {
-		this.__build_window ();
-	},
+const Gui = new Lang.Class({
+	Name: "DiesGnomeGui",
+	Extends: Gtk.Application,
 	
-	
-	/*
-	 * Creates the window and its contents and connects to signals.
-	 */
-	__build_window: function () {
-		let overview = new imports.dies.gnome.overview.Overview ();
-		let editor = new imports.dies.gnome.editor.Editor ();
-		
-		this.base_box = new Gtk.Paned ({orientation: Gtk.Orientation.HORIZONTAL, position: 0});
-		this.base_box.pack1 (overview, false, false);
-		this.base_box.pack2 (editor, true, false);
-		this.base_box.show_all ();
-	
-		this.window = new Gtk.Window ({type: Gtk.WindowType.TOPLEVEL, title: "Dies"});
-		this.window.connect ("delete-event", function (a, e) {this.quit ()}.bind (this));
-		this.window.child = this.base_box;
+	_init: function() {
+		this.parent({"application-id": "net.schoel.Dies",
+					 "flags": 0,//Gio.ApplicationFlags.NONE,
+					 "inactivity-timeout": 30000,
+					 "register-session": true});
+		GLib.set_application_name("Dies");
+		this.register(null);
+		this.main_window = new MainWnd.MainWindow(this);
 	},
 	
 	present: function () {
-		this.window.show ();
+		this.main_window.show ();
 	},
 	
 	hide: function () {
-		this.window.hide ();
+		this.main_window.hide ();
 	},
-	
-	run: function () {
-		this.present ();
-		Gtk.main ();
-	},
-	
-	quit: function () {
-		Gtk.main_quit ();
-	},
-};
-
+});
 
 // We need this because in GJS we cannot easily use GDate in a ListStore
 

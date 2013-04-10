@@ -10,7 +10,7 @@ const ROOT_OBJECTS = ["OverviewBox", "EmptyListstore", "EntryListstore"];
 
 const Overview = new Lang.Class ({
 	Name: "DiesItemsOverview",
-	Extends: Gtk.Notebook,
+	Extends: Gtk.Box,
 	Signals: {
 		"date-selected": {},
 		"date-add": {},
@@ -25,12 +25,12 @@ const Overview = new Lang.Class ({
 	
 
 	_init: function () {
-		this.parent ({});
+		this.parent ({orientation: Gtk.Orientation.VERTICAL});
 		
 		let builder = new Gtk.Builder ({});
 		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "overview_box.ui"]), ROOT_OBJECTS);
 		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
-		this.child = this.ui_elements.OverviewBox;
+		this.pack_start(this.ui_elements.OverviewBox, true, true, 0);
 	},
 	
 	set_date: function () {

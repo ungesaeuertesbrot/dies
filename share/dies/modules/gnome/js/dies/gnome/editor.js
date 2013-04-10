@@ -23,12 +23,14 @@ const Editor = new Lang.Class ({
 	},
 	
 	_init: function () {
-		this.parent ({});
+		this.parent ({"show-tabs": false});
 		
 		let builder = new Gtk.Builder ({});
 		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "details_box.ui"]), ROOT_OBJECTS);
 		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
-		this.child = this.ui_elements.DetailsBox;
+		
+		let tab_label = new Gtk.Label({label: "General"});
+		this.append_page(this.ui_elements.DetailsBox, tab_label);
 	},
 	
 	set_contents: function () {

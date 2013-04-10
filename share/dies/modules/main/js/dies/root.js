@@ -26,7 +26,7 @@ Root.prototype = {
 		Context.active_collection = Context.data_mgr.create_collection ();
 
 		Context.gui.present ();
-		Context.gui.run ();
+		Context.gui.run (null, null);
 	}
 };
 
