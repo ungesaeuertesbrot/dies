@@ -1,4 +1,4 @@
-//const Event = imports.malus.event;
+const Signals = imports.signals;
 
 var __last_collection_id = 0;
 function DataCollection ()
@@ -28,7 +28,7 @@ DataCollection.prototype = {
 	notify_change: function (id, field) {
 		if (field === "date")
 			this._sort_items ();
-		this.fire_event ("changed", id, field);
+		this.emit ("changed", id, field);
 	},
 	
 	
@@ -47,7 +47,7 @@ DataCollection.prototype = {
 		this._items[item.id] = item;
 		this._ordered_item_ids.push (item.id);
 		this._sort_items ();
-		this.fire_event ("new", item.id);
+		this.emit ("new", item.id);
 	},
 	
 	
@@ -57,7 +57,7 @@ DataCollection.prototype = {
 		this._items[id] = undefined;
 		let ordered_index = this._ordered_item_ids.indexOf (id);
 		this._ordered_item_ids.splice (ordered_index, 1)
-		this.fire_event ("deleted", id);
+		this.emit ("deleted", id);
 	},
 	
 	
@@ -72,5 +72,6 @@ DataCollection.prototype = {
 		}
 	}
 };
-//Event.add_events (DataCollection.prototype, ["changed", "new", "deleted"]);
+
+Signals.addSignalMethods(DataCollection.prototype);
 

@@ -3,6 +3,7 @@ const Lang = imports.lang;
 const GObj = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
+const Context = imports.malus.context;
 const GtkExt = imports.malus.gtk_ext;
 const GuiGnome = imports.dies.gnome.shared;
 
@@ -19,6 +20,8 @@ const Overview = new Lang.Class ({
 
 	ui_elements: {
 		OverviewBox: null,
+		OverviewCalendar: null,
+		EntryList: null,
 		EmptyListstore: null,
 		EntryListstore: null,
 	},
@@ -31,6 +34,26 @@ const Overview = new Lang.Class ({
 		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "overview_box.ui"]), ROOT_OBJECTS);
 		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
 		this.pack_start(this.ui_elements.OverviewBox, true, true, 0);
+		
+		Context.watch("active_collection", function(id, oldv, newv) {
+			if (oldv && this.__current_collection_connect_ids)
+				try {
+					for each (let conn_id in this.__current_collection_connect_ids)
+						oldv.disconnect(conn_id);
+				} catch (e) {
+				}
+
+			if (newv)
+				try {
+					newv.connect("new", event_handlers.on_new_item.bind(this));
+					newv.connect("changed", event_handlers.on_item_changed.bind(this));
+					newv.connect("removed", event_handlers.on_item_removed.bind(this));
+				} catch (e) {
+					return null;
+				}
+
+			return newv;
+		});
 	},
 	
 	set_date: function () {
@@ -48,14 +71,18 @@ const event_handlers = {
 	 * Event handler
 	 */
 	on_add_button_clicked: function (actor, event) {
-		var date = GLib.Date.new_dmy (this.calendar.day, this.calendar.month + 1, this.calendar.year);
+		let cal = this.ui_elements.OverviewCalendar;
+		let store = this.ui_elements.EntryListstore;
+		let list = this.ui_elements.EntryList;
+		
+		var date = GLib.Date.new_dmy (cal.day, cal.month + 1, cal.year);
 		for (let item in Context.active_collection.get_iterator ())
 			if (date.compare (item.date) === 0) {
-				this.entry_list_store.foreach (function (model, path, iter) {
+				store.foreach (function (model, path, iter) {
 					let list_item = model.get_value (iter, 0);
 					if (list_item !== item.id)
 						return false;
-					this.entry_list.get_selection ().select_iter (iter);
+					list.get_selection ().select_iter (iter);
 					return true;
 				}.bind (this));
 				return;
@@ -68,6 +95,7 @@ const event_handlers = {
 	 * Event handler
 	 */
 	on_remove_button_clicked: function (actor, event) {
+		print("remove");
 		var iter = this.entry_list.get_selection ().get_selected ()[2];
 		var item_id = this.entry_list_store.get_value (iter, 0);
 		var item = Context.active_collection.get_item (item_id);
@@ -117,6 +145,18 @@ const event_handlers = {
 			this.text_body.buffer.text = item.body ? item.body : "";
 			this.text_body.buffer.set_modified (false);
 		}
+	},
+	
+	on_new_item: function(collection, id) {
+		print(id);
+	},
+	
+	on_item_changed: function(collection, id, field) {
+		print("cahnged");
+	},
+	
+	on_item_removed: function(collection, id) {
+		print("removed");
 	},
 };
 

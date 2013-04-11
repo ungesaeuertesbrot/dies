@@ -8,8 +8,6 @@
 		"/dies/gui": {
 			"is_singular": true,
 			"test_args": {
-				"present": "function",
-				"hide": "function",
 				"run": "function",
 				"quit": "function"
 			}

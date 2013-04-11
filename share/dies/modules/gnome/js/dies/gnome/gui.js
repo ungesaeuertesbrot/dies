@@ -14,20 +14,20 @@ const Gui = new Lang.Class({
 	
 	_init: function() {
 		this.parent({"application-id": "net.schoel.Dies",
-					 "flags": 0,//Gio.ApplicationFlags.NONE,
+					 "flags": Gio.ApplicationFlags.FLAGS_NONE,
 					 "inactivity-timeout": 30000,
 					 "register-session": true});
-		GLib.set_application_name("Dies");
 		this.register(null);
+	},
+	
+	vfunc_startup: function() {
+		this.parent();
 		this.main_window = new MainWnd.MainWindow(this);
 	},
 	
-	present: function () {
-		this.main_window.show ();
-	},
-	
-	hide: function () {
-		this.main_window.hide ();
+	vfunc_activate: function() {
+		this.parent();
+		this.main_window.show();
 	},
 });
 
