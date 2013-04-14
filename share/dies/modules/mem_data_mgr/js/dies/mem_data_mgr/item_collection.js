@@ -11,64 +11,101 @@ DataCollection.prototype = {
 	id: null,
 	
 	_init: function (id) {
-		this._items = [];
-		this._ordered_item_ids = [];
-		this._last_item_id = 0;
+		this._items = {};
 		this.id = id;
+		this._unordered = false;
 	},
 	
 	
-	_sort_items: function () {
-		this._ordered_item_ids.sort (function (a, b) {
-			return this._items[a].date.compare (this._items[b].date);
-		}.bind (this));
+	/*
+	 * Though JavaScript does not guarantee that the fields of an object will
+	 * ever be enumerated in any particular order, SpiderMonkey does so, namely
+	 * in the order in which they have been added to the object (at least for
+	 * field owned by the object as opposed to the prototype).
+	 */
+	_sort: function() {
+		let sortable = [];
+		for (let key in this._items)
+			sortable.push(key);
+		sortable.sort(function(a, b) {return a - b;});
+		let items_new = {};
+		for each (let key in sortable)
+			items_new[key] = this._items[key];
+		this._items = items_new;
+		this._unordered = false;
 	},
 	
 	
-	notify_change: function (id, field) {
-		if (field === "date")
-			this._sort_items ();
-		this.emit ("changed", id, field);
+	announce_change: function (date, field) {
+		if (date instanceof GLib.Date)
+			date = date.get_julian();
+		let item = this._items[date].toString();
+		if (!item)
+			return false;
+		if (field === "date") {
+			delete this._items[date.toString()];
+			let julian_new = item.date.get_julian();
+			this._items[julian_new.toString()] = item;
+			this._unordered = true;
+		}
+		this.emit ("changed", date, field);
+		return true;
 	},
 	
 	
-	new_item: function (init) {
-		var item = {id: ++this._last_item_id};
-		for (let member in init)
-			item[member] = init[member];
-		this.add_item (item);
+	new_item: function(date) {
+		let item = {date: new GLib.Date()};
+		item.date.set_julian(date);
+		this._items[date.toString()] = item;
+		if (!this._unordered) {
+			// if it is not unordered, that last key we get from for … in
+			// must also be the highest. 
+			let highest = 0;
+			for (highest in this._items);
+			// if the new key is not bigger order is not disturbed since we
+			// added the new element to the end of the object.
+			if (highest > date)
+				this._unordered = true;
+		}
+		this.emit("new", date);
+	},
+	
+	
+	get_item: function (date, create) {
+		if (date instanceof GLib.Date)
+			date = date.get_julian();
+		let item = null;
+		let date_str = date.toString();
+		if (this._items.hasOwnProperty(date_str)) {
+			item = this._items[date_str];
+		} else if (create !== false) {
+			item = this.new_item(date);
+		} else
+			return null;
 		return item;
 	},
 	
 	
-	add_item: function (item) {
-		if (this._items[item.id])
-			throw new Error ("Item with id " + item.id + " already exists in collection");
-		this._items[item.id] = item;
-		this._ordered_item_ids.push (item.id);
-		this._sort_items ();
-		this.emit ("new", item.id);
+	has_item:function(date) {
+		if (date instanceof GLib.Date)
+			date = date.get_julian();
+		return typeof this._items[date.toString()] !== "undefined";
 	},
 	
 	
-	delete_item: function (id) {
-		if (typeof this._items[id] == "undefined")
-			return;
-		this._items[id] = undefined;
-		let ordered_index = this._ordered_item_ids.indexOf (id);
-		this._ordered_item_ids.splice (ordered_index, 1)
-		this.emit ("deleted", id);
-	},
-	
-	
-	get_item: function (id) {
-		return this._items[id] ? this._items[id] : null;
+	delete_item: function (date) {
+		if (date instanceof GLib.Date)
+			date = date.get_julian();
+		delete this._items[date.toString()];
+		this.emit ("deleted", date);
 	},
 	
 	
 	get_iterator: function () {
-		for (let i = 0; i < this._ordered_item_ids.length; i++) {
-			yield this._items[this._ordered_item_ids[i]];
+		if (this._unordered)
+			this._sort();
+		for each (let item in this._items) {
+			yield item;
 		}
 	}
 };

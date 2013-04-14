@@ -34,7 +34,7 @@ const Overview = new Lang.Class ({
 		let builder = new Gtk.Builder ({});
 		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "overview_box.ui"]), ROOT_OBJECTS);
 		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
-		this.ui_elements.EntryListstore.set_sort_column_id(1, Gtk.SortType.DESCENDING);
+		this.ui_elements.EntryListstore.set_sort_column_id(0, Gtk.SortType.DESCENDING);
 		this.pack_start(this.ui_elements.OverviewBox, true, true, 0);
 		
 		let that = this;
@@ -68,11 +68,15 @@ const Overview = new Lang.Class ({
 		let store = this.ui_elements.EntryListstore;
 		let list = this.ui_elements.EntryList;
 		
+		let [has_sel, sel_model, sel_iter] = list.get_selection().get_selected();
+		if (has_sel && sel_model.get_value(sel_iter, 0) == date.get_julian())
+			return true;
+		
 		for (let item in Context.active_collection.get_iterator())
 			if (date.compare(item.date) === 0) {
 				store.foreach(function(model, path, iter) {
 					let list_item = model.get_value(iter, 0);
-					if (list_item !== item.id)
+					if (list_item !== date.get_julian())
 						return false;
 					list.get_selection().select_iter(iter);
 					return true;
@@ -97,8 +101,9 @@ const event_handlers = {
 	on_add_event: function (actor, event) {
 		let cal = this.ui_elements.OverviewCalendar;
 		var date = GLib.Date.new_dmy (cal.day, cal.month + 1, cal.year);
-		if (!this.set_date(date))
-			Context.active_collection.new_item ({date: date});
+		if (!this.set_date(date)) {
+			Context.active_collection.get_item(date);	// this will create the item and trigger the new-event
+		}
 	},
 
 
@@ -116,7 +121,7 @@ const event_handlers = {
 		print("remove");
 		var iter = this.entry_list.get_selection ().get_selected ()[2];
 		var item_id = this.entry_list_store.get_value (iter, 0);
-		var item = Context.active_collection.get_item (item_id);
+		var item = Context.active_collection.get_item (GLib.Date.item_id);
 		var msg = new Gtk.MessageDialog ({buttons: Gtk.ButtonsType.NONE,
 									message_type: Gtk.MessageType.WARNING,
 									text: "Delete entry for {0}?".format (__make_date_string (item.date)),
@@ -177,7 +182,7 @@ const event_handlers = {
 		
 		let item = Context.active_collection.get_item(id);
 		let iter = store.append();
-		store.set(iter, [0, 1, 2], [id, GuiGnome.date_to_int(item.date), GuiGnome.make_list_caption(item)]);
+		store.set(iter, [0, 1], [id, GuiGnome.make_list_caption(item)]);
 		
 		if (list.model !== store) {
 			list.model = store;
@@ -190,7 +195,7 @@ const event_handlers = {
 	},
 	
 	on_item_changed: function(collection, id, field) {
-		print("cahnged");
+		print("changed");
 	},
 	
 	on_item_removed: function(collection, id) {
