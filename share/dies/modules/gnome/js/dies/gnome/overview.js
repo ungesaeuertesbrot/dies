@@ -38,58 +38,10 @@ const Overview = new Lang.Class ({
 		this.pack_start(this.ui_elements.OverviewBox, true, true, 0);
 		
 		let that = this;
-		Context.watch("active_collection", function(id, oldv, newv) {
-			if (oldv && that.__current_collection_connect_ids)
-				try {
-					for each (let conn_id in that.__current_collection_connect_ids)
-						oldv.disconnect(conn_id);
-					delete that.__current_collection_connect_ids;
-				} catch (e) {
-				}
-
-			if (newv)
-				try {
-					let conn_ids = [];
-					
-					conn_ids.push(newv.connect("new", event_handlers.on_new_item.bind(that)));
-					conn_ids.push(newv.connect("changed", event_handlers.on_item_changed.bind(that)));
-					conn_ids.push(newv.connect("removed", event_handlers.on_item_removed.bind(that)));
-					
-					that.__current_collection_connect_ids = conn_ids;
-				} catch (e) {
-					return null;
-				}
-
-			return newv;
-		});
-	},
-	
-	set_date: function (date) {
-		let store = this.ui_elements.EntryListstore;
-		let list = this.ui_elements.EntryList;
-		
-		let [has_sel, sel_model, sel_iter] = list.get_selection().get_selected();
-		if (has_sel && sel_model.get_value(sel_iter, 0) == date.get_julian())
-			return true;
-		
-		for (let item in Context.active_collection.get_iterator())
-			if (date.compare(item.date) === 0) {
-				store.foreach(function(model, path, iter) {
-					let list_item = model.get_value(iter, 0);
-					if (list_item !== date.get_julian())
-						return false;
-					list.get_selection().select_iter(iter);
-					return true;
-				});
-				return true;
-			}
-	
-		list.get_selection().unselect_all();
-		return false;
-	},
-	
-	get_date: function () {
-	
+		Context.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
+		Context.connect("date-selected", event_handlers.on_date_selected.bind(this));
+		event_handlers.on_collection_activated.apply(this, [Context, Context.active_collection]);
+		event_handlers.on_date_selected.apply(this, [Context, Context.selected_date]);
 	},
 });
 
@@ -100,17 +52,18 @@ const event_handlers = {
 	 */
 	on_add_event: function (actor, event) {
 		let cal = this.ui_elements.OverviewCalendar;
-		var date = GLib.Date.new_dmy (cal.day, cal.month + 1, cal.year);
-		if (!this.set_date(date)) {
-			Context.active_collection.get_item(date);	// this will create the item and trigger the new-event
-		}
+		let date = GLib.Date.new_dmy (cal.day, cal.month + 1, cal.year);
+		if (Context.active_collection.has_item(date))
+			Context.selected_date = date;
+		else
+			Context.active_collection.new_item(date);
 	},
 
 
 	on_calendar_day_selected: function(actor, event) {
 		let cal = this.ui_elements.OverviewCalendar;
 		let date = GLib.Date.new_dmy(cal.day, cal.month + 1, cal.year);
-		this.set_date(date);
+		Context.selected_date = date;
 	},
 	
 	
@@ -142,36 +95,84 @@ const event_handlers = {
 	on_entry_list_selection_changed: function (actor, event) {
 		let list = this.ui_elements.EntryList;
 		let store = this.ui_elements.EntryListstore;
-		let btn_rem = this.ui_elements.RemoveButton;
-		let cal = this.ui_elements.OverviewCalendar;
 		
-		if (list.get_selection ().count_selected_rows () === 0) {
-			Context.active_item = null;
-			btn_rem.sensitive = false;
-			//this.date_expander.label = "";
-			//this.date_expander.expanded = false;
-			//this.title_entry.text = "";
-			//this.place_entry.text = "";
-			//this.text_body.buffer.text = "";
-			//this.details_box.sensitive = false;
+		let [has_sel, model, iter] = list.get_selection().get_selected();
+		// This can only be caused by the code itself and should be handled there
+		if (!has_sel)
+			return;
+		let item_id = store.get_value(iter, 0);
+		Context.selected_date = item_id;	// item_id is really just the julian date
+	},
+	
+	on_collection_activated: function(sender, newv) {
+		if (this._connected_collection && this._current_collection_connect_ids)
+			try {
+				for each (let conn_id in this._current_collection_connect_ids)
+					this._connected_collection.disconnect(conn_id);
+				delete this._current_collection_connect_ids;
+			} catch (e) {
+			}
+
+		if (newv)
+			try {
+				let conn_ids = [];
+				
+				conn_ids.push(newv.connect("new", event_handlers.on_new_item.bind(this)));
+				conn_ids.push(newv.connect("changed", event_handlers.on_item_changed.bind(this)));
+				conn_ids.push(newv.connect("removed", event_handlers.on_item_removed.bind(this)));
+				
+				this._connected_collection = newv;
+				this._current_collection_connect_ids = conn_ids;
+			} catch (e) {
+			}
+	},
+	
+	on_date_selected: function(sender, newv) {
+		let rem_btn = this.ui_elements.RemoveButton;
+		let store = this.ui_elements.EntryListstore;
+		let list = this.ui_elements.EntryList;
+		let cal = this.ui_elements.OverviewCalendar;
+
+		if (!(newv instanceof GLib.Date
+			  && newv.valid())) {
+			let now = GLib.DateTime.new_now_local();
+			let [year, mon, day] = now.get_ymd();
+			newv = new GLib.Date();
+			newv.set_dmy(day, mon, year);
+		}
+		
+		if (cal.month !== newv.get_month()
+			|| cal.year !== newv.get_year()) {
+			
+			cal.clear_marks();
+			cal.year = newv.get_year ();
+			cal.month = newv.get_month () - 1;
+			if (Context.active_collection)
+				for (let item in Context.active_collection.get_iterator(newv.get_year(), newv.get_month()))
+					cal.mark_day(item.date.get_day());
+		}
+		cal.day = newv.get_day ();
+		
+		let item = null;
+		if (Context.active_collection)
+			item = Context.active_collection.get_item(newv);
+		
+		if (!item) {
+			list.get_selection().unselect_all();
+			rem_btn.sensitive = false;
 		} else {
-			let iter = list.get_selection().get_selected()[2];
-			let item_id = store.get_value(iter, 0);
-			let item = Context.active_collection.get_item(item_id);
-			Context.active_item = item;
-			cal.year = item.date.get_year ();
-			cal.month = item.date.get_month () - 1;
-			cal.day = item.date.get_day ();
-			btn_rem.sensitive = true;
-			/*this.details_box.sensitive = true;
-			this.date_expander.label = __make_date_string (item.date);
-			this.date_adjustment.year = item.date.get_year ();
-			this.date_adjustment.month = item.date.get_month () - 1;
-			this.date_adjustment.day = item.date.get_day ();
-			this.title_entry.text = item.title ? item.title : "";
-			this.place_entry.text = item.place ? item.place : "";
-			this.text_body.buffer.text = item.body ? item.body : "";
-			this.text_body.buffer.set_modified (false);*/
+			rem_btn.sensitive = true;
+			let new_julian = newv.get_julian();
+			let [has_sel, sel_model, sel_iter] = list.get_selection().get_selected();
+			if (!has_sel || Number(sel_model.get_value(sel_iter, 0)) !== new_julian)
+				store.foreach(function(model, path, iter) {
+					let list_date = model.get_value(iter, 0);
+					if (list_date !== new_julian)
+						return false;
+					list.get_selection().select_iter(iter);
+					list.scroll_to_cell(path, null, false, 0, 0);
+					return true;
+				});
 		}
 	},
 	
@@ -189,9 +190,11 @@ const event_handlers = {
 			list.sensitive = true;
 		}
 		
+		cal.mark_day(item.date.get_day());
 		list.get_selection().select_iter(iter);
 		
-		cal.mark_day(item.date.get_day());
+		// emit forcefully
+		Context.emit("date-selected", item.date);
 	},
 	
 	on_item_changed: function(collection, id, field) {

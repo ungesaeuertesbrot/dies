@@ -133,6 +133,7 @@
                 <property name="show_expanders">False</property>
                 <child internal-child="selection">
                   <object class="GtkTreeSelection" id="EntryListSelection">
+                    <property name="mode">browse</property>
                     <signal name="changed" handler="on_entry_list_selection_changed" swapped="no"/>
                   </object>
                 </child>

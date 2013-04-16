@@ -54,9 +54,18 @@ DataCollection.prototype = {
 	
 	
 	new_item: function(date) {
-		let item = {date: new GLib.Date()};
-		item.date.set_julian(date);
-		this._items[date.toString()] = item;
+		let julian = 0;
+		if (date instanceof GLib.Date)
+			julian = date.get_julian();
+		else {
+			julian = Number(date);
+			if (isNaN(julian) || julian < 0)
+				throw "Invalid date: " + date;
+			date = GLib.Date();
+			date.set_julian(julian);
+		}
+		let item = {date: date};
+		this._items[julian.toString()] = item;
 		if (!this._unordered) {
 			// if it is not unordered, that last key we get from for … in
 			// must also be the highest. 
@@ -64,24 +73,20 @@ DataCollection.prototype = {
 			for (highest in this._items);
 			// if the new key is not bigger order is not disturbed since we
 			// added the new element to the end of the object.
-			if (highest > date)
+			if (highest > julian)
 				this._unordered = true;
 		}
-		this.emit("new", date);
+		this.emit("new", julian);
 	},
 	
 	
 	get_item: function (date, create) {
 		if (date instanceof GLib.Date)
 			date = date.get_julian();
-		let item = null;
 		let date_str = date.toString();
-		if (this._items.hasOwnProperty(date_str)) {
-			item = this._items[date_str];
-		} else if (create !== false) {
-			item = this.new_item(date);
-		} else
-			return null;
+		let item = this._items[date_str];
+		if (typeof item === "undefined")
+			item = create ? this.new_item(date) : null;
 		return item;
 	},
 	
@@ -101,11 +106,41 @@ DataCollection.prototype = {
 	},
 	
 	
-	get_iterator: function () {
+	get_iterator: function (year, mon) {
 		if (this._unordered)
 			this._sort();
-		for each (let item in this._items) {
-			yield item;
+
+		let iter = Iterator(this._items);
+		try {
+			let date_min = 0;
+			let date_max = 0xffffffff;
+			if (year) {
+				date_min = new GLib.Date();
+				date_min.clear(1);
+				date_min.set_year(year);
+				date_min.set_month(mon ? mon : GLib.DateMonth.JANUARY);
+				date_min.set_day(1);
+				date_min = date_min.get_julian();
+				
+				date_max = new GLib.Date();
+				date_max.clear(1);
+				date_max.set_year(year);
+				let mon_max = mon ? mon : GLib.DateMonth.DECEMBER;
+				date_max.set_month(mon_max);
+				date_max.set_day(GLib.Date.get_days_in_month(mon_max, year));
+				date_max = date_max.get_julian();
+			}
+
+			let pair;
+			do {
+				pair = iter.next();
+			} while (pair[0] < date_min);
+
+			while(pair[0] <= date_max) {
+				yield pair[1];
+				pair = iter.next();
+			}
+		} catch(e) {
 		}
 	}
 };
