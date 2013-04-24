@@ -27,8 +27,7 @@ Root.prototype = {
 			}
 		});
 		
-		Context._selected_date = new GLib.Date();
-		Context._selected_date.clear(1);
+		Context._selected_date = null;
 		Object.defineProperty(Context, "selected_date", {
 			configurable: false,
 			enumerable: true,

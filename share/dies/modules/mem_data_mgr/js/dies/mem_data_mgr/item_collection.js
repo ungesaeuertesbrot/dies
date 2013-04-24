@@ -36,24 +36,25 @@ DataCollection.prototype = {
 	},
 	
 	
-	announce_change: function (date, field) {
-		if (date instanceof GLib.Date)
-			date = date.get_julian();
+	announce_change: function (date, field, event_id) {
+		date = _date_to_julian(date);
 		let item = this._items[date].toString();
 		if (!item)
 			return false;
 		if (field === "date") {
 			delete this._items[date.toString()];
+			this.emit("deleted", date, event_id);
 			let julian_new = item.date.get_julian();
 			this._items[julian_new.toString()] = item;
 			this._unordered = true;
-		}
-		this.emit ("changed", date, field);
+			this.emit("new", julian_new, event_id);
+		} else
+			this.emit("changed", date, field, event_id);
 		return true;
 	},
 	
 	
-	new_item: function(date) {
+	new_item: function(date, event_id) {
 		let julian = 0;
 		if (date instanceof GLib.Date)
 			julian = date.get_julian();
@@ -76,33 +77,29 @@ DataCollection.prototype = {
 			if (highest > julian)
 				this._unordered = true;
 		}
-		this.emit("new", julian);
+		this.emit("new", julian, event_id);
 	},
 	
 	
-	get_item: function (date, create) {
-		if (date instanceof GLib.Date)
-			date = date.get_julian();
+	get_item: function (date, create, event_id) {
+		date = _date_to_julian(date);
 		let date_str = date.toString();
 		let item = this._items[date_str];
 		if (typeof item === "undefined")
-			item = create ? this.new_item(date) : null;
+			item = create ? this.new_item(date, event_id) : null;
 		return item;
 	},
 	
 	
 	has_item:function(date) {
-		if (date instanceof GLib.Date)
-			date = date.get_julian();
-		return typeof this._items[date.toString()] !== "undefined";
+		return typeof this._items[_date_to_julian(date).toString()] !== "undefined";
 	},
 	
 	
-	delete_item: function (date) {
-		if (date instanceof GLib.Date)
-			date = date.get_julian();
+	delete_item: function (date, event_id) {
+		date = _date_to_julian(date);
 		delete this._items[date.toString()];
-		this.emit ("deleted", date);
+		this.emit ("deleted", date, event_id);
 	},
 	
 	
@@ -146,4 +143,16 @@ DataCollection.prototype = {
 };
 
 Signals.addSignalMethods(DataCollection.prototype);
+
+function _date_to_julian(date)
+{
+	if (date && date instanceof GLib.Date)
+		return date.get_julian();
+	else {
+		let julian = Number(date);
+		if (isNaN(julian) || julian < 0)
+			throw "Invalid date: " + date;
+		return julian;
+	}
+}
 

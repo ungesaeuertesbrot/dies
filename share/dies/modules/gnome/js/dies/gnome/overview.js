@@ -71,21 +71,23 @@ const event_handlers = {
 	 * Event handler
 	 */
 	on_remove_button_clicked: function (actor, event) {
-		print("remove");
-		var iter = this.entry_list.get_selection ().get_selected ()[2];
-		var item_id = this.entry_list_store.get_value (iter, 0);
-		var item = Context.active_collection.get_item (GLib.Date.item_id);
+		let list = this.ui_elements.EntryList;
+		let store = this.ui_elements.EntryListstore;
+		
+		var iter = list.get_selection ().get_selected ()[2];
+		var item_id = store.get_value (iter, 0);
+		var item = Context.active_collection.get_item (item_id);
 		var msg = new Gtk.MessageDialog ({buttons: Gtk.ButtonsType.NONE,
 									message_type: Gtk.MessageType.WARNING,
-									text: "Delete entry for {0}?".format (__make_date_string (item.date)),
+									text: "Delete entry for {0}?".format (GuiGnome.make_date_string (item.date)),
 									secondary_text: "This action cannot be undone."});
-		msg.add_button ("gtk-cancel", 1);
-		msg.add_button ("gtk-delete", 2);
-		let result = msg. run ();
+		msg.add_button ("gtk-cancel", Gtk.ResponseType.CANCEL);
+		msg.add_button ("gtk-delete", Gtk.ResponseType.ACCEPT);
+		let result = msg.run ();
 		msg.hide ();
 		msg.destroy ();
-		if (result === 2)
-			Context.active_collection.delete_item (item_id);
+		if (result === Gtk.ResponseType.ACCEPT)
+			Context.active_collection.delete_item(item_id);
 	},
 		
 
@@ -119,7 +121,7 @@ const event_handlers = {
 				
 				conn_ids.push(newv.connect("new", event_handlers.on_new_item.bind(this)));
 				conn_ids.push(newv.connect("changed", event_handlers.on_item_changed.bind(this)));
-				conn_ids.push(newv.connect("removed", event_handlers.on_item_removed.bind(this)));
+				conn_ids.push(newv.connect("deleted", event_handlers.on_item_deleted.bind(this)));
 				
 				this._connected_collection = newv;
 				this._current_collection_connect_ids = conn_ids;
@@ -201,8 +203,30 @@ const event_handlers = {
 		print("changed");
 	},
 	
-	on_item_removed: function(collection, id) {
-		print("removed");
+	on_item_deleted: function(collection, id) {
+		let store = this.ui_elements.EntryListstore;
+		let list = this.ui_elements.EntryList;
+		let cal = this.ui_elements.OverviewCalendar;
+		
+		let [has_sel, sel_model, sel_iter] = list.get_selection().get_selected();
+		let list_id = store.get_value(sel_iter, 0);
+		if (Number(list_id) === Number(id))
+			store.remove(sel_iter);
+		else
+			store.foreach(function(model, path, iter) {
+				let item_id = model.get_value(iter, 0);
+				if (Number(item_id) !== Number(id))
+					return false;
+				model.remove(iter);
+				return true;
+			});
+		
+		let date = new GLib.Date();
+		date.set_julian(id);
+		if (cal.year === date.get_year() && cal.month === date.get_month() - 1)
+			cal.unmark_day(date.get_day());
+		
+		Context.emit("date-selected", date);
 	},
 };
 
