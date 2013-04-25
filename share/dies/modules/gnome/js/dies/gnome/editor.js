@@ -104,8 +104,58 @@ const event_handlers = {
 		return true;
 	},
 	
-	on_collection_activated: function(sender, collection) {
+	on_item_changed: function(sender, item, field, event_id) {
+		if (event_id === EVENT_ID)
+			return false;
+		
+		switch (field) {
+		case "date": {
+			// This should never happen. Instead, a remove event followed by an
+			// add event should be emitted.
+			let cal = this.ui_elements.DateAdjustment;
+			let date_label = this.ui_elements.DateExpanderLabel;
+
+			cal.year = item.date.get_year();
+			cal.month = item.date.get_month() - 1;
+			cal.day = item.date.get_day();
+			date_label.label = GuiGnome.make_date_string(item.date);
+			break;
+		}
+		
+		case "title": {
+			this.ui_elements.TitleEntry.text = item.title ? item.title : "";
+			break;
+		}
+		
+		case "body": {
+			this.ui_elements.TextBodyBuffer.text = item.text ? item.text : "";
+			break;
+		}}
+		
+		return false;
+	},
 	
+	on_collection_activated: function(sender, newv) {
+		if (this._connected_collection && this._current_collection_connect_ids)
+			try {
+				for each (let conn_id in this._current_collection_connect_ids)
+					this._connected_collection.disconnect(conn_id);
+				delete this._current_collection_connect_ids;
+			} catch (e) {
+				logError(e, "Error disconnecting event handlers from collection");
+			}
+
+		if (newv)
+			try {
+				let conn_ids = [];
+				
+				conn_ids.push(newv.connect("changed", event_handlers.on_item_changed.bind(this)));
+				
+				this._connected_collection = newv;
+				this._current_collection_connect_ids = conn_ids;
+			} catch (e) {
+				logError(e, "Error connecting event handlers to collection");
+			}
 	},
 	
 	on_date_selected: function(sender, date) {

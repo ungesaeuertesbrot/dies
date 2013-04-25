@@ -107,6 +107,11 @@ const event_handlers = {
 	},
 	
 	on_collection_activated: function(sender, newv) {
+		let cal = this.ui_elements.OverviewCalendar;
+		let list = this.ui_elements.EntryList;
+		let store = this.ui_elements.EntryListstore;
+		let rem_btn = this.ui_elements.RemoveButton;
+
 		if (this._connected_collection && this._current_collection_connect_ids)
 			try {
 				for each (let conn_id in this._current_collection_connect_ids)
@@ -115,7 +120,10 @@ const event_handlers = {
 			} catch (e) {
 			}
 
-		if (newv)
+		cal.clear_marks();
+		store.clear();
+		
+		if (newv) {
 			try {
 				let conn_ids = [];
 				
@@ -127,6 +135,23 @@ const event_handlers = {
 				this._current_collection_connect_ids = conn_ids;
 			} catch (e) {
 			}
+			
+			
+			for (let item in Context.active_collection.get_iterator(Context.selected_date.get_year(), Context.selected_date.get_month()))
+				cal.mark_day(item.date.get_day());
+			
+			for (let item in Context.active_collection.get_iterator()) {
+				let iter = store.append();
+				store.set(iter, [0, 1], [item.date.get_julian(), GuiGnome.make_list_caption(item)]);
+				list.model = store;
+				list.sensitive = true;
+			}
+			
+			let date = new GLib.Date();
+			let [year, month, day] = cal.get_date();
+			date.set_dmy(day, month + 1, year);
+			rem_btn.sensitive = Context.active_collection.has_item(date);
+		}
 	},
 	
 	on_date_selected: function(sender, newv) {
@@ -200,7 +225,7 @@ const event_handlers = {
 	},
 	
 	on_item_changed: function(collection, id, field) {
-		print("changed");
+		//print("changed");
 	},
 	
 	on_item_deleted: function(collection, id) {

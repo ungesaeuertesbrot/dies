@@ -19,7 +19,29 @@ Root.prototype = {
 			set: function(new_v) {
 				if (this._active_collection === new_v)
 					return;
+				let old_v = this._active_collection;
+				if (Array.isArray(this._collection_event_handler_ids))
+					try {
+						for each (let eid in this._collection_event_handler_ids)
+							old_v.disconnect(eid);
+					} catch(e) {
+					}
+				
+				if (old_v)
+					old_v.flush();
+				
 				this._active_collection = new_v;
+				let eids = [];
+				eids.push(new_v.connect("new", function(collection, id) {
+					Context.selected_date = id;
+					return false;
+				}));
+				eids.push(new_v.connect("deleted", function(collection, id) {
+					if (id === Context._selected_item.date.get_julian())
+						Context._selected_item = null;
+					return false;
+				}));
+				this._collection_event_handler_ids = eids;
 				this.emit("collection-activated", new_v);
 			},
 			get: function() {
@@ -44,16 +66,17 @@ Root.prototype = {
 				if (!newv.valid())
 					throw "Cannot be set to invalid date";
 				
-				if (this._selected_date instanceof GLib.Date
-					&& this._selected_date.valid()
-					&& !this._selected_date.compare(newv))
-					return;
-				
-				this._selected_date = newv;
 				if (this._active_collection)
 					this._selected_item = this._active_collection.get_item(newv);
 				else
 					this._selected_item = null;
+				
+				if (this._selected_date instanceof GLib.Date
+					&& this._selected_date.valid()
+					&& !this._selected_date.compare(newv))
+					return;
+
+				this._selected_date = newv;
 				this.emit("date-selected", newv);
 			},
 			get: function() {
@@ -84,7 +107,11 @@ Root.prototype = {
 		if (!Context.data_mgr)
 			throw new Error ("No data manager found!");
 		
-		Context.active_collection = Context.data_mgr.create_collection ();
+		if (Context.data_mgr.type === "file") {
+			let file_name = GLib.build_filenamev([Context.paths.user_share, "dates.jd"]);
+			Context.active_collection = Context.data_mgr.create_collection(file_name);
+		} else
+			Context.active_collection = Context.data_mgr.create_collection ();
 		let now = GLib.DateTime.new_now_local();
 		let today = new GLib.Date();
 		let [year, mon, day] = now.get_ymd();
@@ -93,6 +120,8 @@ Root.prototype = {
 		Context.selected_date = today;
 		
 		Context.gui.run (argv);
+		
+		Context.active_collection.flush();
 	}
 };
 
