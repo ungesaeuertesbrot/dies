@@ -147,10 +147,11 @@ const event_handlers = {
 				list.sensitive = true;
 			}
 			
-			let date = new GLib.Date();
+			event_handlers.on_date_selected.apply(this, [sender, Context.selected_date]);
+			/*let date = new GLib.Date();
 			let [year, month, day] = cal.get_date();
 			date.set_dmy(day, month + 1, year);
-			rem_btn.sensitive = Context.active_collection.has_item(date);
+			rem_btn.sensitive = Context.active_collection.has_item(date);*/
 		}
 	},
 	
@@ -180,9 +181,7 @@ const event_handlers = {
 		}
 		cal.day = newv.get_day ();
 		
-		let item = null;
-		if (Context.active_collection)
-			item = Context.active_collection.get_item(newv);
+		let item = Context.selected_item;
 		
 		if (!item) {
 			list.get_selection().unselect_all();

@@ -20,28 +20,36 @@ Root.prototype = {
 				if (this._active_collection === new_v)
 					return;
 				let old_v = this._active_collection;
-				if (Array.isArray(this._collection_event_handler_ids))
+				if (Array.isArray(this._collection_event_handler_ids)) {
 					try {
 						for each (let eid in this._collection_event_handler_ids)
 							old_v.disconnect(eid);
 					} catch(e) {
 					}
+					delete this._collection_event_handler_ids;
+				}
 				
 				if (old_v)
 					old_v.flush();
 				
 				this._active_collection = new_v;
-				let eids = [];
-				eids.push(new_v.connect("new", function(collection, id) {
-					Context.selected_date = id;
-					return false;
-				}));
-				eids.push(new_v.connect("deleted", function(collection, id) {
-					if (id === Context._selected_item.date.get_julian())
-						Context._selected_item = null;
-					return false;
-				}));
-				this._collection_event_handler_ids = eids;
+				
+				if (new_v) {
+					let eids = [];
+					eids.push(new_v.connect("new", function(collection, id) {
+						Context.selected_date = id;
+						return false;
+					}));
+					eids.push(new_v.connect("deleted", function(collection, id) {
+						if (id === Context._selected_item.date.get_julian())
+							Context._selected_item = null;
+						return false;
+					}));
+					this._collection_event_handler_ids = eids;
+					
+					this._selected_item = new_v.get_item(this._selected_date);
+				}
+				
 				this.emit("collection-activated", new_v);
 			},
 			get: function() {

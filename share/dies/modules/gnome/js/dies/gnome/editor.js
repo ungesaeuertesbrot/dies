@@ -156,11 +156,12 @@ const event_handlers = {
 			} catch (e) {
 				logError(e, "Error connecting event handlers to collection");
 			}
+		
+		this.set_contents(Context.selected_item);
 	},
 	
 	on_date_selected: function(sender, date) {
-		let item = Context.active_collection.get_item(date);
-		this.set_contents(item);
+		this.set_contents(Context.selected_item);
 	},
 };
 
