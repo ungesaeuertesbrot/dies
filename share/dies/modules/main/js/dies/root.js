@@ -1,14 +1,20 @@
 const Context = imports.malus.context;
 const Signals = imports.signals;
 
-function Root ()
+function Root(injector)
 {
-	this._init ();
+	this._init(injector);
 }
 
 Root.prototype = {
 	
-	_init: function () {
+	_init: function(injector) {
+		this._context = {
+			paths: null,
+			modules: null,
+		};
+		injector.inject(this._context);
+		this._injector = injector;
 		
 		Signals.addSignalMethods(Context);
 		
@@ -93,25 +99,29 @@ Root.prototype = {
 			}
 		});
 
-		Context.modules.add_extension_listener ("/dies/data_mgr", function (pt, ext) {
-			Context.data_mgr = Context.modules.get_extension_object (ext);
-		});
-		Context.modules.add_extension_listener ("/dies/gui", function (pt, ext) {
-			Context.gui = Context.modules.get_extension_object (ext);
-		});
+		this._context.modules.add_extension_listener("/dies/data_mgr", function(pt, ext) {
+			let data_mgr = this._context.modules.get_extension_object(ext);
+			this._context.data_mgr = data_mgr;
+			this._injector.add_injectable("dies.data_mgr", data_mgr);
+		}.bind(this));
+		Context.modules.add_extension_listener ("/dies/gui", function(pt, ext) {
+			let gui = this._context.modules.get_extension_object(ext);
+			this._context.gui = gui;
+			this._injector.add_injectable("dies.gui", gui);
+		}.bind(this));
 	},
 	
 	run: function (argv) {
-		if (!Context.gui)
+		if (!this._context.gui)
 			throw new Error ("No user interface found!");
-		if (!Context.data_mgr)
+		if (!this._context.data_mgr)
 			throw new Error ("No data manager found!");
 		
-		if (Context.data_mgr.type === "file") {
-			let file_name = GLib.build_filenamev([Context.paths.user_share, "dates.jd"]);
-			Context.active_collection = Context.data_mgr.create_collection(file_name);
+		if (this._context.data_mgr.type === "file") {
+			let file_name = GLib.build_filenamev([this._context.paths.user_share, "dates.jd"]);
+			Context.active_collection = this._context.data_mgr.create_collection(file_name);
 		} else
-			Context.active_collection = Context.data_mgr.create_collection ();
+			Context.active_collection = this._context.data_mgr.create_collection ();
 		let now = GLib.DateTime.new_now_local();
 		let today = new GLib.Date();
 		let [year, mon, day] = now.get_ymd();
@@ -119,7 +129,7 @@ Root.prototype = {
 		today.set_dmy(day, mon, year);
 		Context.selected_date = today;
 		
-		Context.gui.run (argv);
+		this._context.gui.run (argv);
 		
 		Context.active_collection.flush();
 	}
