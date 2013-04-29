@@ -34,3 +34,15 @@ script. These are the steps to follow for a manual installation:
    the the paths of the prefixes according to the choices you have made above.
 5. Run that script and enjoy DIES.
 
+Structure
+---------
+
+Dies is built upon the malus framework. This means that it is made up of modules
+containing extensions and extension points. The modules are:
+
+* **main**: This is where execution of DIES beginns. It sets up some controling
+  logic and instantiates a data manager and a UI.
+* **gnome**: A user interface for the GNOME. It is based on GTK+3 and
+  GApplication/GTKApplication.
+* **json\_data\_mgr**: Handles data in memory and stores it in JSON format.
+
