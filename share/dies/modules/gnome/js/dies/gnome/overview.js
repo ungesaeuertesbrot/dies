@@ -3,9 +3,8 @@ const Lang = imports.lang;
 const GObj = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
-const Context = imports.malus.context;
 const GtkExt = imports.malus.gtk_ext;
-const GuiGnome = imports.dies.gnome.shared;
+const Common = imports.dies.gnome.common;
 
 const ROOT_OBJECTS = ["OverviewBox", "EmptyListstore", "EntryListstore"];
 
@@ -28,20 +27,28 @@ const Overview = new Lang.Class ({
 	},
 	
 
-	_init: function () {
-		this.parent ({orientation: Gtk.Orientation.VERTICAL});
+	_init: function(injector) {
+		this.parent({orientation: Gtk.Orientation.VERTICAL});
 		
-		let builder = new Gtk.Builder ({});
-		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "overview_box.ui"]), ROOT_OBJECTS);
-		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
+		this._context = {
+			tracker: null,
+			gnome_paths: null,
+		};
+		
+		injector.inject(this._context, [{src: "dies.status_tracker", dest: "tracker"},
+										{src: "dies.gnome.paths", dest: "gnome_paths"}]);
+		
+		let builder = new Gtk.Builder({});
+		builder.add_objects_from_file(GLib.build_filenamev ([this._context.gnome_paths.ui, "overview_box.ui"]), ROOT_OBJECTS);
+		GtkExt.builder_connect(builder, event_handlers, this.ui_elements, this);
 		this.ui_elements.EntryListstore.set_sort_column_id(0, Gtk.SortType.DESCENDING);
 		this.pack_start(this.ui_elements.OverviewBox, true, true, 0);
 		
 		let that = this;
-		Context.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
-		Context.connect("date-selected", event_handlers.on_date_selected.bind(this));
-		event_handlers.on_collection_activated.apply(this, [Context, Context.active_collection]);
-		event_handlers.on_date_selected.apply(this, [Context, Context.selected_date]);
+		this._context.tracker.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
+		this._context.tracker.connect("date-selected", event_handlers.on_date_selected.bind(this));
+		event_handlers.on_collection_activated.apply(this, [this, this._context.tracker.active_collection]);
+		event_handlers.on_date_selected.apply(this, [this, this._context.tracker.selected_date]);
 	},
 });
 
@@ -53,17 +60,17 @@ const event_handlers = {
 	on_add_event: function (actor, event) {
 		let cal = this.ui_elements.OverviewCalendar;
 		let date = GLib.Date.new_dmy (cal.day, cal.month + 1, cal.year);
-		if (Context.active_collection.has_item(date))
-			Context.selected_date = date;
+		if (this._context.tracker.active_collection.has_item(date))
+			this._context.tracker.selected_date = date;
 		else
-			Context.active_collection.new_item(date);
+			this._context.tracker.active_collection.new_item(date);
 	},
 
 
 	on_calendar_day_selected: function(actor, event) {
 		let cal = this.ui_elements.OverviewCalendar;
 		let date = GLib.Date.new_dmy(cal.day, cal.month + 1, cal.year);
-		Context.selected_date = date;
+		this._context.tracker.selected_date = date;
 	},
 	
 	
@@ -76,10 +83,10 @@ const event_handlers = {
 		
 		var iter = list.get_selection ().get_selected ()[2];
 		var item_id = store.get_value (iter, 0);
-		var item = Context.active_collection.get_item (item_id);
+		var item = this._context.tracker.active_collection.get_item (item_id);
 		var msg = new Gtk.MessageDialog ({buttons: Gtk.ButtonsType.NONE,
 									message_type: Gtk.MessageType.WARNING,
-									text: "Delete entry for {0}?".format (GuiGnome.make_date_string (item.date)),
+									text: "Delete entry for {0}?".format (Common.make_date_string (item.date)),
 									secondary_text: "This action cannot be undone."});
 		msg.add_button ("gtk-cancel", Gtk.ResponseType.CANCEL);
 		msg.add_button ("gtk-delete", Gtk.ResponseType.ACCEPT);
@@ -87,7 +94,7 @@ const event_handlers = {
 		msg.hide ();
 		msg.destroy ();
 		if (result === Gtk.ResponseType.ACCEPT)
-			Context.active_collection.delete_item(item_id);
+			this._context.tracker.active_collection.delete_item(item_id);
 	},
 		
 
@@ -103,7 +110,7 @@ const event_handlers = {
 		if (!has_sel)
 			return;
 		let item_id = store.get_value(iter, 0);
-		Context.selected_date = item_id;	// item_id is really just the julian date
+		this._context.tracker.selected_date = item_id;	// item_id is really just the julian date
 	},
 	
 	on_collection_activated: function(sender, newv) {
@@ -137,21 +144,18 @@ const event_handlers = {
 			}
 			
 			
-			for (let item in Context.active_collection.get_iterator(Context.selected_date.get_year(), Context.selected_date.get_month()))
+			let date_sel = this._context.tracker.selected_date;
+			for (let item in newv.get_iterator(date_sel.get_year(), date_sel.get_month()))
 				cal.mark_day(item.date.get_day());
 			
-			for (let item in Context.active_collection.get_iterator()) {
+			for (let item in newv.get_iterator()) {
 				let iter = store.append();
-				store.set(iter, [0, 1], [item.date.get_julian(), GuiGnome.make_list_caption(item)]);
+				store.set(iter, [0, 1], [item.date.get_julian(), make_list_caption(item)]);
 				list.model = store;
 				list.sensitive = true;
 			}
 			
-			event_handlers.on_date_selected.apply(this, [sender, Context.selected_date]);
-			/*let date = new GLib.Date();
-			let [year, month, day] = cal.get_date();
-			date.set_dmy(day, month + 1, year);
-			rem_btn.sensitive = Context.active_collection.has_item(date);*/
+			event_handlers.on_date_selected.apply(this, [sender, date_sel]);
 		}
 	},
 	
@@ -175,13 +179,14 @@ const event_handlers = {
 			cal.clear_marks();
 			cal.year = newv.get_year ();
 			cal.month = newv.get_month () - 1;
-			if (Context.active_collection)
-				for (let item in Context.active_collection.get_iterator(newv.get_year(), newv.get_month()))
+			let collection = this._context.active_collection;
+			if (collection)
+				for (let item in collection.get_iterator(newv.get_year(), newv.get_month()))
 					cal.mark_day(item.date.get_day());
 		}
 		cal.day = newv.get_day ();
 		
-		let item = Context.selected_item;
+		let item = this._context.tracker.selected_item;
 		
 		if (!item) {
 			list.get_selection().unselect_all();
@@ -207,9 +212,9 @@ const event_handlers = {
 		let list = this.ui_elements.EntryList;
 		let cal = this.ui_elements.OverviewCalendar;
 		
-		let item = Context.active_collection.get_item(id);
+		let item = this._context.tracker.active_collection.get_item(id);
 		let iter = store.append();
-		store.set(iter, [0, 1], [id, GuiGnome.make_list_caption(item)]);
+		store.set(iter, [0, 1], [id, make_list_caption(item)]);
 		
 		if (list.model !== store) {
 			list.model = store;
@@ -219,8 +224,9 @@ const event_handlers = {
 		cal.mark_day(item.date.get_day());
 		list.get_selection().select_iter(iter);
 		
-		// emit forcefully
-		Context.emit("date-selected", item.date);
+		// emit forcefully as the status for the current date has changed and
+		// we need to update the display
+		this._context.tracker.emit("date-selected", item.date);
 	},
 	
 	on_item_changed: function(collection, id, field) {
@@ -250,8 +256,17 @@ const event_handlers = {
 		if (cal.year === date.get_year() && cal.month === date.get_month() - 1)
 			cal.unmark_day(date.get_day());
 		
-		Context.emit("date-selected", date);
+		// emit forcefully as the status for the current date has changed and
+		// we need to update the display
+		this._context.tracker.emit("date-selected", date);
 	},
 };
 
+function make_list_caption(item)
+{
+	var caption = "<b>" + Common.make_date_string(item.date) + "</b>";
+	if (item.title)
+		caption += "\n" + item.title;
+	return caption;
+}
 

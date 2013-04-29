@@ -5,12 +5,12 @@ const MainWindow = Lang.Class({
 	Name: "DiesMainWindow",
 	Extends: Gtk.ApplicationWindow,
 	
-	_init: function(app) {
+	_init: function(injector, app) {
 		this.parent({application: app});
 		
 		let paned = new Gtk.Paned({orientation: Gtk.Orientation.HORIZONTAL});
-		let overview = new imports.dies.gnome.overview.Overview();
-		let editor = new imports.dies.gnome.editor.Editor();
+		let overview = new imports.dies.gnome.overview.Overview(injector);
+		let editor = new imports.dies.gnome.editor.Editor(injector);
 		
 		this.child = paned;
 		paned.pack1(overview, false, false);

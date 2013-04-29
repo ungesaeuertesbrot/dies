@@ -5,14 +5,24 @@ const Gio = imports.gi.Gio;
 const Gtk = imports.gi.Gtk;
 const MainWnd = imports.dies.gnome.main_window;
 
-GObj.type_init();
+const Common = imports.dies.gnome.common;
+
 Gtk.init(null, null);
 
 const Gui = new Lang.Class({
 	Name: "DiesGnomeGui",
 	Extends: Gtk.Application,
 	
-	_init: function() {
+	_init: function(injector) {
+		this._context = {
+			modules: null,
+		};
+		injector.inject(this._context);
+		this._injector = injector;
+		let module_dir = this._context.modules.get_module_directory(Common.MODULE_NAME);
+		let ui_dir = GLib.build_filenamev([module_dir, "ui"]);
+		injector.add_injectable("dies.gnome.paths", {ui: ui_dir});
+		
 		this.parent({"application-id": "net.schoel.Dies",
 					 "flags": Gio.ApplicationFlags.FLAGS_NONE,
 					 "inactivity-timeout": 30000,
@@ -22,7 +32,7 @@ const Gui = new Lang.Class({
 	
 	vfunc_startup: function() {
 		this.parent();
-		this.main_window = new MainWnd.MainWindow(this);
+		this.main_window = new MainWnd.MainWindow(this._injector, this);
 	},
 	
 	vfunc_activate: function() {

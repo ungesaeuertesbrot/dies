@@ -5,7 +5,7 @@ const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
 const GtkExt = imports.malus.gtk_ext;
-const GuiGnome = imports.dies.gnome.shared;
+const Common = imports.dies.gnome.common;
 
 const EVENT_ID = "GuiGnome.Editor.GenericEvent";
 const ROOT_OBJECTS = ["DetailsBox", "TextbodyBuffer"];
@@ -27,18 +27,25 @@ const Editor = new Lang.Class ({
 		TextbodyBuffer: null,
 	},
 	
-	_init: function () {
-		this.parent ({"show-tabs": false});
+	_init: function(injector) {
+		this.parent({"show-tabs": false});
 		
-		let builder = new Gtk.Builder ({});
-		builder.add_objects_from_file (GLib.build_filenamev ([GuiGnome.ui_dir, "details_box.ui"]), ROOT_OBJECTS);
-		GtkExt.builder_connect (builder, event_handlers, this.ui_elements, this);
+		this._context = {
+			tracker: null,
+			gnome_paths: null,
+		};
+		injector.inject(this._context, [{src: "dies.status_tracker", dest: "tracker"},
+										{src: "dies.gnome.paths", dest: "gnome_paths"}]);
+		
+		let builder = new Gtk.Builder({});
+		builder.add_objects_from_file(GLib.build_filenamev ([this._context.gnome_paths.ui, "details_box.ui"]), ROOT_OBJECTS);
+		GtkExt.builder_connect(builder, event_handlers, this.ui_elements, this);
 		
 		let tab_label = new Gtk.Label({label: "General"});
 		this.append_page(this.ui_elements.DetailsBox, tab_label);
 		
-		Context.connect("date-selected", event_handlers.on_date_selected.bind(this));
-		Context.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
+		this._context.tracker.connect("date-selected", event_handlers.on_date_selected.bind(this));
+		this._context.tracker.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
 	},
 	
 	set_contents: function (item) {
@@ -55,7 +62,7 @@ const Editor = new Lang.Class ({
 			cal.year = item.date.get_year();
 			cal.month = item.date.get_month() - 1;
 			cal.day = item.date.get_day();
-			date_label.label = GuiGnome.make_date_string(item.date);
+			date_label.label = Common.make_date_string(item.date);
 			title.text = item.title ? item.title : "";
 			body.text = item.text ? item.text : "";
 			
@@ -73,33 +80,36 @@ const Editor = new Lang.Class ({
 
 
 const event_handlers = {
-	on_date_adjusted: function () {
+	on_date_adjusted: function() {
 		if (this._handlers_inactive)
 			return false;
 		
 		let [year, mon, day] = this.ui_elements.DateAdjustment.get_date();
 		let date = new GLib.Date();
 		date.set_dmy(day, mon + 1, year);
-		Context.selected_item.date = date;
-		Context.active_collection.announce_change(Context.selected_date, "date", EVENT_ID);
+		let tracker = this._context.tracker;
+		tracker.selected_item.date = date;
+		tracker.active_collection.announce_change(tracker.selected_date, "date", EVENT_ID);
 		
 		return true;
 	},
 	
-	on_title_changed: function () {
+	on_title_changed: function() {
 		if (this._handlers_inactive)
 			return false;
-		Context.selected_item.title = this.ui_elements.TitleEntry.text;
-		Context.active_collection.announce_change(Context.selected_date, "title", EVENT_ID);
+		let tracker = this._context.tracker;
+		tracker.selected_item.title = this.ui_elements.TitleEntry.text;
+		tracker.active_collection.announce_change(tracker.selected_date, "title", EVENT_ID);
 		
 		return true;
 	},
 	
-	on_textbody_buffer_changed: function () {
+	on_textbody_buffer_changed: function() {
 		if (this._handlers_inactive)
 			return false;
-		Context.selected_item.text = this.ui_elements.TextbodyBuffer.text;
-		Context.active_collection.announce_change(Context.selected_date, "text", EVENT_ID);
+		let tracker = this._context.tracker;
+		tracker.selected_item.text = this.ui_elements.TextbodyBuffer.text;
+		tracker.active_collection.announce_change(tracker.selected_date, "text", EVENT_ID);
 		
 		return true;
 	},
@@ -118,7 +128,7 @@ const event_handlers = {
 			cal.year = item.date.get_year();
 			cal.month = item.date.get_month() - 1;
 			cal.day = item.date.get_day();
-			date_label.label = GuiGnome.make_date_string(item.date);
+			date_label.label = Common.make_date_string(item.date);
 			break;
 		}
 		
@@ -157,11 +167,11 @@ const event_handlers = {
 				logError(e, "Error connecting event handlers to collection");
 			}
 		
-		this.set_contents(Context.selected_item);
+		this.set_contents(this._context.tracker.selected_item);
 	},
 	
 	on_date_selected: function(sender, date) {
-		this.set_contents(Context.selected_item);
+		this.set_contents(this._context.tracker.selected_item);
 	},
 };
 
