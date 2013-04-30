@@ -212,7 +212,9 @@ const event_handlers = {
 		let list = this.ui_elements.EntryList;
 		let cal = this.ui_elements.OverviewCalendar;
 		
-		let item = this._context.tracker.active_collection.get_item(id);
+		let item = this._context.tracker.selected_item;
+		if (item.date.get_julian() !== id)
+			item = this._context.tracker.active_collection.get_item(id);
 		let iter = store.append();
 		store.set(iter, [0, 1], [id, make_list_caption(item)]);
 		
@@ -230,7 +232,29 @@ const event_handlers = {
 	},
 	
 	on_item_changed: function(collection, id, field) {
-		//print("changed");
+		// We only display the date (which is never actually changed) and the
+		// title in the overview.
+		if (field !== "title")
+			return;
+
+		let list = this.ui_elements.EntryList;
+		
+		let item = this._context.tracker.selected_item;
+		if (item.date.get_julian() !== id)
+			item = this._context.tracker.active_collection.get_item(id);
+
+		let [has_sel, model, iter] = list.get_selection().get_selected();
+		let list_id = model.get_value(iter, 0);
+		if (Number(list_id) !== Number(id))
+			model.foreach(function(for_model, path, for_iter) {
+				let item_id = for_model.get_value(for_iter, 0);
+				if (Number(item_id) !== Number(id))
+					return false;
+				iter = for_iter;
+				return true;
+			});
+		
+		model.set_value(iter, 1, make_list_caption(item));
 	},
 	
 	on_item_deleted: function(collection, id) {
