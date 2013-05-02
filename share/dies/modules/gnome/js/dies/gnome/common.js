@@ -1,8 +1,7 @@
 const GLib = imports.gi.GLib;
-const Context = imports.malus.context;
+const Gtk = imports.gi.Gtk;
 
 const MODULE_NAME = "gnome";
-
 
 function make_date_string (date)
 {

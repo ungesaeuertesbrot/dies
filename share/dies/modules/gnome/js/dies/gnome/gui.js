@@ -7,7 +7,6 @@ const MainWnd = imports.dies.gnome.main_window;
 
 const Common = imports.dies.gnome.common;
 
-Gtk.init(null, null);
 
 const Gui = new Lang.Class({
 	Name: "DiesGnomeGui",
