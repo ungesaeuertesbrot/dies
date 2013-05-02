@@ -35,8 +35,8 @@ const Overview = new Lang.Class ({
 			gnome_paths: null,
 		};
 		
-		injector.inject(this._context, [{src: "dies.status_tracker", dest: "tracker"},
-										{src: "dies.gnome.paths", dest: "gnome_paths"}]);
+		injector.inject(this._context, {"dies.status_tracker": "tracker",
+										"dies.gnome.paths": "gnome_paths"});
 		
 		let builder = new Gtk.Builder({});
 		builder.add_objects_from_file(GLib.build_filenamev ([this._context.gnome_paths.ui, "overview_box.ui"]), ROOT_OBJECTS);
