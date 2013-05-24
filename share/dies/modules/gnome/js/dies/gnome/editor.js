@@ -31,11 +31,10 @@ const Editor = new Lang.Class ({
 		this.parent({"show-tabs": false});
 		
 		this._context = {
-			tracker: null,
-			gnome_paths: null,
+			tracker: "dies.status_tracker",
+			gnome_paths: "dies.gnome.paths",
 		};
-		injector.inject(this._context, {"dies.status_tracker": "tracker",
-										"dies.gnome.paths": "gnome_paths"});
+		injector.inject(this._context);
 		
 		let builder = new Gtk.Builder({});
 		builder.add_objects_from_file(GLib.build_filenamev ([this._context.gnome_paths.ui, "details_box.ui"]), ROOT_OBJECTS);
