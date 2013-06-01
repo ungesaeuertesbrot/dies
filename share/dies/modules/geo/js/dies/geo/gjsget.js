@@ -1,3 +1,4 @@
+const GLib = imports.gi.GLib;
 const Soup = imports.gi.Soup;
 
 function makeQueryString(parts) {
@@ -14,9 +15,9 @@ function makeQueryString(parts) {
 }
 
 function makeURIString(scheme, server, resource, query) {
-	if (!scheme.endsWith("://"))
+	if (scheme.substr(scheme.length - 3) !== "://")
 		scheme += "://";
-	if (resource.charAt(0) != "/" && !server.endsWith("/"))
+	if (resource.charAt(0) != "/" && server.charAt(server.length - 1) !== "/")
 		resource = "/" + resource;
 	queryStr = query !== null && typeof query === "object" ? makeQueryString(query) : "";
 	if (queryStr.length > 0)
@@ -39,7 +40,7 @@ GjsGet.prototype = {
 	set server(val) {
 		if (typeof val !== "string")
 			val = "";
-		if (val.endsWith("/"))
+		if (val.charAt(val.length - 1) === "/")
 			this._server = val.substr(0, val.length - 1)
 		this._server = val;
 		this._dirty = true;
@@ -84,7 +85,60 @@ GjsGet.prototype = {
 			this._dirty = false;
 		}
 		
+		if (!this._session) {
+			this._session = new Soup.Session();
+			this._session.use_thread_context = true;
+		}
 		
+		this._msg = Soup.Message.new("GET", this._uristr);
+		let that = this;
+		this._session.queue_message(this._msg, function(session, message) {
+			delete that._msg;
+			
+			if (message.status_code !== 200) {
+				callback(this, message.status_code, null);
+				return;
+			}
+			
+			let data = message.response_body.flatten().get_data();
+			callback(this, 200, data);
+		});
+	},
+	
+	cancel: function() {
+		if (this._msg)
+			this._session.cancel_message(this._msg);
 	},
 };
+
+String.prototype.format = imports.format.format;
+
+var get = new GjsGet("api.geonames.org", "search", {
+	"name_startsWith": "Aa",
+	"featureClass": "P",
+	"lang": "de",
+	"type": "json",
+//	"style": "short",
+	"orderby": "countryName",
+	"username": "dies"
+});
+
+var loop = new GLib.MainLoop(null, false);
+get.run(function(getter, code, data) {
+	print("Code: %d".format(code));
+	if (code === 200) {
+		let obj = JSON.parse(data);
+		print("Anzahl der Orte: %s".format(obj.totalResultsCount));
+		for (let i = 0; i < obj.totalResultsCount; i++)
+			try {
+				print("%s (%s)".format(obj.geonames[i].name, obj.geonames[i].countryCode));
+			} catch(e) {
+				print("Could not write entry #%d".format(i));
+			}
+	}
+	
+	loop.quit();
+});
+
+loop.run();
 

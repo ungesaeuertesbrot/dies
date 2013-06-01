@@ -33,6 +33,7 @@ const Editor = new Lang.Class ({
 		this._context = {
 			tracker: "dies.status_tracker",
 			gnome_paths: "dies.gnome.paths",
+			modules: null,
 		};
 		injector.inject(this._context);
 		
@@ -42,6 +43,12 @@ const Editor = new Lang.Class ({
 		
 		let tab_label = new Gtk.Label({label: "General"});
 		this.append_page(this.ui_elements.DetailsBox, tab_label);
+		
+		this._context.modules.add_extension_listener("/dies/gnome/editor/tab", function(pt, ext) {
+			let tabdesc = this._context.modules.get_extension_object(ext);
+			this.append_page(tabdesc.getTab(), new Gtk.Label({label: tabdesc.tabTitle}));
+			this.show_tabs = true;
+		}.bind(this));
 		
 		this._context.tracker.connect("date-selected", event_handlers.on_date_selected.bind(this));
 		this._context.tracker.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
