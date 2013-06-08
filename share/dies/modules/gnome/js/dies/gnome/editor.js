@@ -4,7 +4,7 @@ const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
-const GtkExt = imports.malus.gtk_ext;
+const GtkExt = imports.malus.extend_gtk;
 const Common = imports.dies.gnome.common;
 
 const EVENT_ID = "GuiGnome.Editor.GenericEvent";
@@ -17,7 +17,7 @@ const Editor = new Lang.Class ({
 		"changed": {},
 	},
 
-	ui_elements: {
+	uiElements: {
 		DetailsBox: null,
 		DateExpander: null,
 		DateExpanderLabel: null,
@@ -31,44 +31,48 @@ const Editor = new Lang.Class ({
 		this.parent({"show-tabs": false});
 		
 		this._context = {
-			tracker: "dies.status_tracker",
-			gnome_paths: "dies.gnome.paths",
-			modules: null,
+			tracker: "dies.status-tracker",
+			modules: "malus.modules",
+			extensions: "malus.extensions",
 		};
 		injector.inject(this._context);
 		
 		let builder = new Gtk.Builder({});
-		builder.add_objects_from_file(GLib.build_filenamev ([this._context.gnome_paths.ui, "details_box.ui"]), ROOT_OBJECTS);
-		GtkExt.builder_connect(builder, event_handlers, this.ui_elements, this);
+		let uiMarkup = this._context.modules.getResourceContents(Common.MODULE_NAME, "ui/editor.ui").toString();
+		builder.add_objects_from_string(uiMarkup, uiMarkup.length, ROOT_OBJECTS);
+		GtkExt.builderConnect(builder, _eventHandlers, this.uiElements, this);
 		
-		let tab_label = new Gtk.Label({label: "General"});
-		this.append_page(this.ui_elements.DetailsBox, tab_label);
+		let tabLabel = new Gtk.Label({label: "General"});
+		this.append_page(this.uiElements.DetailsBox, tabLabel);
 		
-		this._context.modules.add_extension_listener("/dies/gnome/editor/tab", function(pt, ext) {
-			let tabdesc = this._context.modules.get_extension_object(ext);
-			this.append_page(tabdesc.getTab(), new Gtk.Label({label: tabdesc.tabTitle}));
-			this.show_tabs = true;
+		this._context.extensions.addExtensionListener("/dies/gnome/editor/tab", function(msg, ext) {
+			switch (msg) {
+			case "added":
+				let tabDesc = this._context.extensions.getExtensionObject(ext);
+				this.append_page(tabDesc.getTab(), new Gtk.Label({label: tabDesc.tabTitle}));
+				this.show_tabs = true;
+			}
 		}.bind(this));
 		
-		this._context.tracker.connect("date-selected", event_handlers.on_date_selected.bind(this));
-		this._context.tracker.connect("collection-activated", event_handlers.on_collection_activated.bind(this));
+		this._context.tracker.connect("date-selected", _eventHandlers.onDateSelected.bind(this));
+		this._context.tracker.connect("collection-activated", _eventHandlers.onCollectionActivated.bind(this));
 	},
 	
-	set_contents: function (item) {
-		this._handlers_inactive = true;
+	setContents: function (item) {
+		this._handlersInactive = true;
 		
-		let expander = this.ui_elements.DateExpander;
-		let date_label = this.ui_elements.DateExpanderLabel;
-		let cal = this.ui_elements.DateAdjustment;
-		let title = this.ui_elements.TitleEntry;
-		let body = this.ui_elements.TextbodyBuffer;
-		let body_entry = this.ui_elements.Textbody;
+		let expander = this.uiElements.DateExpander;
+		let dateLabel = this.uiElements.DateExpanderLabel;
+		let cal = this.uiElements.DateAdjustment;
+		let title = this.uiElements.TitleEntry;
+		let body = this.uiElements.TextbodyBuffer;
+		let bodyEntry = this.uiElements.Textbody;
 		
 		if (item && item.date && item.date instanceof GLib.Date) {
 			cal.year = item.date.get_year();
 			cal.month = item.date.get_month() - 1;
 			cal.day = item.date.get_day();
-			date_label.label = Common.make_date_string(item.date);
+			dateLabel.label = Common.makeDateString(item.date);
 			title.text = item.title ? item.title : "";
 			body.text = item.text ? item.text : "";
 			
@@ -76,52 +80,54 @@ const Editor = new Lang.Class ({
 		} else
 			this.sensitive = false;
 		
-		this._handlers_inactive = false;
+		this._handlersInactive = false;
 	},
 	
-	get_contents: function (item) {
+	getContents: function (item) {
 	
 	},
 });
 
 
-const event_handlers = {
-	on_date_adjusted: function() {
-		if (this._handlers_inactive)
+const _eventHandlers = {
+	onDateAdjusted: function() {
+		if (this._handlersInactive)
 			return false;
 		
-		let [year, mon, day] = this.ui_elements.DateAdjustment.get_date();
+		let [year, mon, day] = this.uiElements.DateAdjustment.get_date();
 		let date = new GLib.Date();
 		date.set_dmy(day, mon + 1, year);
 		let tracker = this._context.tracker;
-		tracker.selected_item.date = date;
-		tracker.active_collection.announce_change(tracker.selected_date, "date", EVENT_ID);
+		tracker.selectedItem.date = date;
+		tracker.activeCollection.announceChange(tracker.selectedDate, "date", EVENT_ID);
 		
 		return true;
 	},
 	
-	on_title_changed: function() {
-		if (this._handlers_inactive)
+	onTitleChanged: function() {
+		if (this._handlersInactive)
 			return false;
+		
 		let tracker = this._context.tracker;
-		tracker.selected_item.title = this.ui_elements.TitleEntry.text;
-		tracker.active_collection.announce_change(tracker.selected_date, "title", EVENT_ID);
+		tracker.selectedItem.title = this.uiElements.TitleEntry.text;
+		tracker.activeCollection.announceChange(tracker.selectedDate, "title", EVENT_ID);
 		
 		return true;
 	},
 	
-	on_textbody_buffer_changed: function() {
-		if (this._handlers_inactive)
+	onTextbodyBufferChanged: function() {
+		if (this._handlersInactive)
 			return false;
+		
 		let tracker = this._context.tracker;
-		tracker.selected_item.text = this.ui_elements.TextbodyBuffer.text;
-		tracker.active_collection.announce_change(tracker.selected_date, "text", EVENT_ID);
+		tracker.selectedItem.text = this.uiElements.TextbodyBuffer.text;
+		tracker.activeCollection.announceChange(tracker.selectedDate, "text", EVENT_ID);
 		
 		return true;
 	},
 	
-	on_item_changed: function(sender, item, field, event_id) {
-		if (event_id === EVENT_ID)
+	onItemChanged: function(sender, item, field, eventId) {
+		if (eventId === EVENT_ID)
 			return false;
 		
 		switch (field) {
@@ -129,56 +135,55 @@ const event_handlers = {
 			// This should never happen. Instead, a remove event followed by an
 			// add event should be emitted.
 			let cal = this.ui_elements.DateAdjustment;
-			let date_label = this.ui_elements.DateExpanderLabel;
+			let dateLabel = this.uiElements.DateExpanderLabel;
 
 			cal.year = item.date.get_year();
 			cal.month = item.date.get_month() - 1;
 			cal.day = item.date.get_day();
-			date_label.label = Common.make_date_string(item.date);
+			dateLabel.label = Common.makeDateString(item.date);
 			break;
 		}
 		
 		case "title": {
-			this.ui_elements.TitleEntry.text = item.title ? item.title : "";
+			this.uiElements.TitleEntry.text = item.title ? item.title : "";
 			break;
 		}
 		
 		case "body": {
-			this.ui_elements.TextBodyBuffer.text = item.text ? item.text : "";
+			this.uiElements.TextBodyBuffer.text = item.text ? item.text : "";
 			break;
 		}}
 		
 		return false;
 	},
 	
-	on_collection_activated: function(sender, newv) {
-		if (this._connected_collection && this._current_collection_connect_ids)
+	onCollectionActivated: function(sender, newv) {
+		if (this._connectedCollection && this._currentCollectionConnectIds)
 			try {
-				for each (let conn_id in this._current_collection_connect_ids)
-					this._connected_collection.disconnect(conn_id);
-				delete this._current_collection_connect_ids;
+				for each (let connId in this._currentCollectionConnectIds)
+					this._connectedCollection.disconnect(connId);
+				delete this._currentCollectionConnectIds;
 			} catch (e) {
 				logError(e, "Error disconnecting event handlers from collection");
 			}
 
 		if (newv)
 			try {
-				let conn_ids = [];
+				let connIds = [];
 				
-				conn_ids.push(newv.connect("changed", event_handlers.on_item_changed.bind(this)));
+				connIds.push(newv.connect("changed", _eventHandlers.onItemChanged.bind(this)));
 				
-				this._connected_collection = newv;
-				this._current_collection_connect_ids = conn_ids;
+				this._connectedCollection = newv;
+				this._currentCollectionConnectIds = connIds;
 			} catch (e) {
 				logError(e, "Error connecting event handlers to collection");
 			}
 		
-		this.set_contents(this._context.tracker.selected_item);
+		this.setContents(this._context.tracker.selectedItem);
 	},
 	
-	on_date_selected: function(sender, date) {
-		this.set_contents(this._context.tracker.selected_item);
+	onDateSelected: function(sender, date) {
+		this.setContents(this._context.tracker.selectedItem);
 	},
 };
-
 

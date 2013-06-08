@@ -1,10 +1,9 @@
 {
-	"name": "dies",
-	"version": "0.1",
-	"title": "Dies",
-	"description": "Extensible diary appilcation",
+	"Name": "dies",
+	"Version": "0.2",
+	"Title": "Dies",
+	"Description": "Extensible diary appilcation",
 	
-	"malus_version": "0.2",
-	"allow_user_modules": true
+	"MalusVersion": "0.2",
+	"AllowUserModules": true
 }
-

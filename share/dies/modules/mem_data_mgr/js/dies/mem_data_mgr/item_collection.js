@@ -1,6 +1,6 @@
 const Signals = imports.signals;
 
-var __last_collection_id = 0;
+var _lastCollectionId = 0;
 function JSONCollection(fn)
 {
 	this._init(fn);
@@ -12,18 +12,18 @@ JSONCollection.prototype = {
 	
 	_init: function(fn) {
 		this._items = {};
-		this.id = ++__last_collection_id;
+		this.id = ++_lastCollectionId;
 		this._unordered = false;
 		this._dirty = false;
-		if (!fn || !this.set_storage_path(fn)) {
+		if (!fn || !this.setStoragePath(fn)) {
 			let home = GLib.get_home_dir();
-			let new_file, new_file_path;
+			let newFile, newFilePath;
 			let i = 0;
 			do {
-				new_file_path = GLib.build_filenamev([home, "dates_%d.jd".format(i++)]);
-				let new_file = Gio.File.new_for_path(new_file_path);
-			} while(new_file.query_exists(null));
-			this.set_storage_path(new_file_path);
+				newFilePath = GLib.build_filenamev([home, "dates_%d.jd".format(i++)]);
+				let newFile = Gio.File.new_for_path(newFilePath);
+			} while(newFile.query_exists(null));
+			this.setStoragePath(newFilePath);
 		} else {
 			let file = Gio.File.new_for_path(fn);
 			try {
@@ -58,42 +58,42 @@ JSONCollection.prototype = {
 		for (let key in this._items)
 			sortable.push(key);
 		sortable.sort(function(a, b) {return a - b;});
-		let items_new = {};
+		let itemsNew = {};
 		for each (let key in sortable)
-			items_new[key] = this._items[key];
-		this._items = items_new;
+			itemsNew[key] = this._items[key];
+		this._items = itemsNew;
 		this._unordered = false;
 	},
 	
 	
-	announce_change: function (date, field, event_id) {
-		date = _date_to_julian(date);
+	announceChange: function (date, field, eventId) {
+		date = _dateToJulian(date);
 		let item = this._items[date.toString()];
 		if (!item)
 			return false;
 		if (field === "date") {
 			delete this._items[date.toString()];
-			this.emit("deleted", date, event_id);
-			let julian_new = item.date.get_julian();
-			this._items[julian_new.toString()] = item;
+			this.emit("deleted", date, eventId);
+			let julianNew = item.date.get_julian();
+			this._items[julianNew.toString()] = item;
 			this._unordered = true;
-			this.emit("new", julian_new, event_id);
+			this.emit("new", julianNew, eventId);
 		} else
-			this.emit("changed", date, field, event_id);
+			this.emit("changed", date, field, eventId);
 		
 		this._dirty = true;
 		return true;
 	},
 	
 	
-	new_item: function(date, event_id) {
+	newItem: function(date, eventId) {
 		let julian = 0;
 		if (date instanceof GLib.Date)
 			julian = date.get_julian();
 		else {
 			julian = Number(date);
 			if (isNaN(julian) || julian < 0)
-				throw "Invalid date: " + date;
+				throw new Error("Invalid date: %s".format(date));
 			date = GLib.Date();
 			date.set_julian(julian);
 		}
@@ -111,64 +111,64 @@ JSONCollection.prototype = {
 		}
 		
 		this._dirty = true;
-		this.emit("new", julian, event_id);
+		this.emit("new", julian, eventId);
 	},
 	
 	
-	get_item: function (date, create, event_id) {
-		date = _date_to_julian(date);
-		let date_str = date.toString();
-		let item = this._items[date_str];
+	getItem: function (date, create, eventId) {
+		date = _dateToJulian(date);
+		let dateStr = date.toString();
+		let item = this._items[dateStr];
 		if (typeof item === "undefined")
-			item = create ? this.new_item(date, event_id) : null;
+			item = create ? this.newItem(date, eventId) : null;
 		return item;
 	},
 	
 	
-	has_item:function(date) {
-		return typeof this._items[_date_to_julian(date).toString()] !== "undefined";
+	hasItem:function(date) {
+		return typeof this._items[_dateToJulian(date).toString()] !== "undefined";
 	},
 	
 	
-	delete_item: function (date, event_id) {
-		date = _date_to_julian(date);
+	deleteItem: function (date, eventId) {
+		date = _dateToJulian(date);
 		delete this._items[date.toString()];
 		
 		this._dirty = true;
-		this.emit ("deleted", date, event_id);
+		this.emit ("deleted", date, eventId);
 	},
 	
 	
-	get_iterator: function (year, mon) {
+	getIterator: function (year, mon) {
 		this._sort();
 
 		let iter = Iterator(this._items);
 		try {
-			let date_min = 0;
-			let date_max = 0xffffffff;
+			let dateMin = 0;
+			let dateMax = 0xffffffff;
 			if (year) {
-				date_min = new GLib.Date();
-				date_min.clear(1);
-				date_min.set_year(year);
-				date_min.set_month(mon ? mon : GLib.DateMonth.JANUARY);
-				date_min.set_day(1);
-				date_min = date_min.get_julian();
+				dateMin = new GLib.Date();
+				dateMin.clear(1);
+				dateMin.set_year(year);
+				dateMin.set_month(mon ? mon : GLib.DateMonth.JANUARY);
+				dateMin.set_day(1);
+				dateMin = dateMin.get_julian();
 				
-				date_max = new GLib.Date();
-				date_max.clear(1);
-				date_max.set_year(year);
-				let mon_max = mon ? mon : GLib.DateMonth.DECEMBER;
-				date_max.set_month(mon_max);
-				date_max.set_day(GLib.Date.get_days_in_month(mon_max, year));
-				date_max = date_max.get_julian();
+				dateMax = new GLib.Date();
+				dateMax.clear(1);
+				dateMax.set_year(year);
+				let monMax = mon ? mon : GLib.DateMonth.DECEMBER;
+				dateMax.set_month(monMax);
+				dateMax.set_day(GLib.Date.get_days_in_month(monMax, year));
+				dateMax = dateMax.get_julian();
 			}
 
 			let pair;
 			do {
 				pair = iter.next();
-			} while (pair[0] < date_min);
+			} while (pair[0] < dateMin);
 
-			while(pair[0] <= date_max) {
+			while(pair[0] <= dateMax) {
 				yield pair[1];
 				pair = iter.next();
 			}
@@ -179,7 +179,7 @@ JSONCollection.prototype = {
 	flush: function() {
 		if(!this._dirty)
 			return true;
-		if (!this._storage_file)
+		if (!this._storageFile)
 			return false;
 		this._sort();
 		
@@ -189,9 +189,9 @@ JSONCollection.prototype = {
 				julian: this.get_julian()
 			};
 		};
-		let new_contents = JSON.stringify(this._items);
+		let newContents = JSON.stringify(this._items);
 		delete GLib.Date.prototype.toJSON;
-		GLib.file_set_contents(this._storage_file.get_path(), new_contents, new_contents.length);
+		GLib.file_set_contents(this._storageFile.get_path(), newContents, newContents.length);
 /*		this._storage_file.replace_contents(new_contents,		// contents
 											new_contents.length,// content lenth
 											null,				// old etag
@@ -203,11 +203,11 @@ JSONCollection.prototype = {
 		return true;
 	},
 	
-	get_storage_path: function() {
-		return this._storage_file.get_path();
+	getStoragePath: function() {
+		return this._storageFile.get_path();
 	},
 	
-	set_storage_path: function(path) {
+	setStoragePath: function(path) {
 		let file = Gio.File.new_for_path(path);
 		if (file.query_exists(null)) {
 			let info = file.query_info("%s,%s".format(Gio.FILE_ATTRIBUTE_ACCESS_CAN_WRITE, Gio.FILE_ATTRIBUTE_STANDARD_TYPE), Gio.FileQueryInfoFlags.NONE, null);
@@ -222,7 +222,7 @@ JSONCollection.prototype = {
 				return false;
 		}
 		
-		this._storage_file = file;
+		this._storageFile = file;
 		this._dirty = true;
 		return true;
 	},
@@ -230,14 +230,14 @@ JSONCollection.prototype = {
 
 Signals.addSignalMethods(JSONCollection.prototype);
 
-function _date_to_julian(date)
+function _dateToJulian(date)
 {
 	if (date && date instanceof GLib.Date)
 		return date.get_julian();
 	else {
 		let julian = Number(date);
 		if (isNaN(julian) || julian < 0)
-			throw "Invalid date: " + date;
+			throw new Error("Invalid date: %s".format(date));
 		return julian;
 	}
 }

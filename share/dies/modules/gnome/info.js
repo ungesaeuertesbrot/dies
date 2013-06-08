@@ -1,22 +1,22 @@
 {
-	"name": "gnome",
-	"version": "0.1",
-	"title": "Dies GNOME user interface",
-	"description": "A user interface for the dies programm using GTK+/GNOME 3.",
+	"Name": "gnome",
+	"Version": "0.2",
+	"Title": "Dies GNOME user interface",
+	"Description": "A user interface for the dies programm using GTK+/GNOME 3.",
 	
-	"extension_points": {
+	"ExtensionPoints": {
 		"/dies/gnome/editor/tab": {
-			"test_args": {
+			"TestArgs": {
 				"getTab": "function",
 				"tabTitle": "string"
 			}
 		}
 	},
 	
-	"extensions": [
+	"Extensions": [
 		{
-			"extends": "/dies/gui",
-			"extension_class": "dies/gnome/gui::Gui"
+			"Path": "/dies/gui",
+			"Class": "dies/gnome/gui::Gui"
 		}
 	]
 }

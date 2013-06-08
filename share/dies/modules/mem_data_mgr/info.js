@@ -1,16 +1,16 @@
 {
-	"name": "mem_data_mgr",
-	"version": "0a",
-	"title": "Dies memory based data manager",
-	"description": "Keeps the data of the diary entries in RAM and makes them accessible there.",
+	"Name": "mem-data-mgr",
+	"Version": "0.2",
+	"Title": "Dies memory based data manager",
+	"Description": "Keeps the data of the diary entries in RAM and makes them accessible there.",
 	
-	"extension_points": {
+	"ExtensionPoints": {
 	},
 	
-	"extensions": [
+	"Extensions": [
 		{
-			"extends": "/dies/data_mgr",
-			"extension_class": "dies/mem_data_mgr/mgr::Manager"
+			"Path": "/dies/data-mgr",
+			"Class": "dies/mem_data_mgr/mgr::Manager"
 		}
 	]
 }

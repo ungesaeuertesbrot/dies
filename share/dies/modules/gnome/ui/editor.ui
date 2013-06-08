@@ -2,7 +2,7 @@
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
   <object class="GtkTextBuffer" id="TextbodyBuffer">
-    <signal name="changed" handler="on_textbody_buffer_changed" swapped="no"/>
+    <signal name="changed" handler="onTextbodyBufferChanged" swapped="no"/>
   </object>
   <object class="GtkWindow" id="Dummy">
     <property name="can_focus">False</property>
@@ -26,7 +26,7 @@
                 <property name="month">1</property>
                 <property name="day">18</property>
                 <property name="show_details">False</property>
-                <signal name="day-selected" handler="on_date_adjusted" swapped="no"/>
+                <signal name="day-selected" handler="onDateAdjusted" swapped="no"/>
               </object>
             </child>
             <child type="label">
@@ -55,7 +55,7 @@
             <property name="invisible_char">●</property>
             <property name="shadow_type">none</property>
             <property name="placeholder_text">Short description of the day's events</property>
-            <signal name="changed" handler="on_title_changed" swapped="no"/>
+            <signal name="changed" handler="onTitleChanged" swapped="no"/>
           </object>
           <packing>
             <property name="expand">False</property>

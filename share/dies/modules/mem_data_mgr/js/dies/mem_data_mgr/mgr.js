@@ -9,13 +9,13 @@ Manager.prototype = {
 	type: "file",
 	multi: true,
 	storage: {
-		accept_file_types: {
+		acceptFileTypes: {
 			"jd": "JSON Diary"
 		},
-		instant_write: false,
+		instantWrite: false,
 	},
 	
-	create_collection: function(fn) {
+	createCollection: function(fn) {
 		return new Collection.JSONCollection(fn);
 	}
 };

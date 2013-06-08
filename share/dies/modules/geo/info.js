@@ -1,16 +1,16 @@
 {
-	"name": "geo",
-	"version": "0a",
-	"title": "Dies Geographical Information",
-	"description": "Add place information to diary entries",
+	"Name": "geo",
+	"Version": "0a",
+	"Title": "Dies Geographical Information",
+	"Description": "Add place information to diary entries",
 	
-	"extension_points": {
+	"ExtensionPoints": {
 	},
 	
-	"extensions": [
+	"Extensions": [
 		{
-			"extends": "/dies/gnome/editor/tab",
-			"extension_class": "dies/geo/gnomeTab::GnomeTab"
+			"Path": "/dies/gnome/editor/tab",
+			"Class": "dies/geo/gnomeTab::GnomeTab"
 		}
 	]
 }
